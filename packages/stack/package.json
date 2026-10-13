@@ -1,6 +1,6 @@
 {
   "name": "toto-stack",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Secure full-stack web app foundation: Express 5 + Prisma sessions, auth (password + TOTP MFA), RBAC, CSRF, rate limiting, user management, background jobs and extensible services.",
   "keywords": [
     "express",
