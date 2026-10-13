@@ -4,7 +4,13 @@ import {ErrorCode} from "@shared/errorCodes";
 import {respond} from "@server/libs/utils/helpers";
 import {Dependencies} from "@server/libs/Dependencies";
 import {AuthService} from "@server/libs/security/AuthService";
-import {changePasswordSchema, mfaDisableSchema, otpTokenSchema, passwordConfirmSchema} from "@server/libs/security/validation";
+import {
+    changePasswordSchema,
+    mfaDisableSchema,
+    otpTokenSchema,
+    passwordConfirmSchema,
+    revokeSessionSchema
+} from "@server/libs/security/validation";
 import {rateLimitClientKey} from "@server/libs/security/clientIp";
 import {checkRateLimit, rejectBearer} from "@server/libs/security/routeGuards";
 import {PrismaUserType} from "@shared/types/user";
@@ -118,6 +124,15 @@ export class AccountRoute extends BaseRoute {
             await userService.revokeOtherSessions(user.id, req.sessionID);
 
             return respond(res, 200, "success", "MFA disabled");
+        });
+
+        this.post("/revoke-session", revokeSessionSchema, async (req, res, {password, sessionID}) => {
+            const user = await this.requirePasswordConfirmed(req, res, password);
+            if (!user) return;
+
+            await userService.revokeSession(user.id, sessionID);
+
+            return respond(res, 200, "success", "Session revoked");
         });
     }
 

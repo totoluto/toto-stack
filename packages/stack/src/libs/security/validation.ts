@@ -49,6 +49,13 @@ export const passwordConfirmSchema = z.object({
 
 export type PasswordConfirmPayload = z.infer<typeof passwordConfirmSchema>;
 
+export const revokeSessionSchema = z.object({
+    password: passwordField,
+    sessionID: z.string().min(1, "Session ID is required"),
+}).strict();
+
+export type RevokeSessionPayload = z.infer<typeof revokeSessionSchema>;
+
 export const mfaDisableSchema = z.object({
     password: passwordField,
     token: otpField,
