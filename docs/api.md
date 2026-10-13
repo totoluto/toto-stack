@@ -231,6 +231,14 @@ Body: `{password, token}`, the password plus a current TOTP code.
 
 Rate limits: password confirmation, then the MFA limits.
 
+### `POST /api/account/revoke-session`
+
+Body: `{password, sessionID}`, the password plus a current TOTP code.
+
+| Response | When |
+|---|---|
+| 200 `"Session revoked"` | The specified session was revoked. |
+
 ## Users (`/api/users`)
 
 *Template (`server/routes/UsersRoute.ts`). Admin.* The rules below are the template's; keep them if you change the route. Creating a user also follows the stack's password policy (`createUserSchema`), and `userService.createUser` turns a taken username into a 409.

@@ -248,6 +248,15 @@ export class UserService {
         });
     }
 
+    public async revokeSession(userId: number, sessionID: string): Promise<void> {
+        await this.prisma.session.deleteMany({
+            where: {
+                userId,
+                id: sessionID
+            },
+        });
+    }
+
     public async revokeOtherSessions(userId: number, keepSessionId?: string): Promise<void> {
         await this.prisma.session.deleteMany({
             where: {
