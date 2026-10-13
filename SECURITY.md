@@ -1,13 +1,5 @@
 # Security policy
 
-<!--
-Maintainer TODO before publishing:
-- GitHub private vulnerability reporting only exists for PUBLIC repositories.
-  Making the repository public is a maintainer decision. After that, enable it
-  under Settings -> Code security -> Private vulnerability reporting.
-- Replace the fallback contact placeholder below with a monitored address.
--->
-
 `toto-stack` is a security-focused framework, and we take reports seriously. Thank you for helping keep its users safe.
 
 ## Supported versions
@@ -24,9 +16,6 @@ Until 1.0, only the **latest 0.x minor line** receives security fixes. When 0.3.
 ## Reporting a vulnerability
 
 **Please don't open a public issue, discussion or pull request for a vulnerability.**
-
-1. **Preferred:** GitHub private vulnerability reporting. On the repository's **Security** tab, choose **Report a vulnerability** (https://github.com/totoluto/toto-stack/security/advisories/new).
-2. **Fallback**, if private reporting isn't available to you: email `<security contact — to be filled in by the maintainer>`.
 
 Please include:
 - the affected package(s) and version(s);
