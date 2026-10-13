@@ -1,0 +1,119 @@
+{
+  "name": "toto-stack",
+  "version": "0.1.0",
+  "description": "Secure full-stack web app foundation: Express 5 + Prisma sessions, auth (password + TOTP MFA), RBAC, CSRF, rate limiting, user management, background jobs and extensible services.",
+  "keywords": [
+    "express",
+    "prisma",
+    "react",
+    "authentication",
+    "mfa",
+    "totp",
+    "rbac",
+    "csrf",
+    "session",
+    "rate-limiting",
+    "full-stack",
+    "framework"
+  ],
+  "homepage": "https://github.com/totoluto/toto-stack/tree/master/packages/stack#readme",
+  "bugs": {
+    "url": "https://github.com/totoluto/toto-stack/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/totoluto/toto-stack.git",
+    "directory": "packages/stack"
+  },
+  "license": "MIT",
+  "author": "totoluto",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    },
+    "./shared": {
+      "types": "./dist/shared.d.ts",
+      "default": "./dist/shared.js"
+    },
+    "./prisma/base.prisma": "./prisma/base.prisma",
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "prisma",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsdown --config-loader native",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:shuffle": "vitest run --sequence.shuffle",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-router": "^7.0.0 || ^8.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-router": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@node-rs/argon2": "^2.2.2",
+    "@otplib/plugin-base32-scure": "^13.5.0",
+    "@otplib/plugin-crypto-node": "^13.5.0",
+    "@otplib/totp": "^13.5.0",
+    "@types/express": "^5.0.6",
+    "@types/express-session": "^1.18.2",
+    "chalk": "^4.1.2",
+    "express": "^5.2.1",
+    "express-session": "^1.18.2",
+    "helmet": "^8.3.0",
+    "node-cron": "^4.6.0",
+    "nodemailer": "^10.0.13",
+    "pino": "^10.4.0",
+    "qrcode": "^1.5.4",
+    "zod": "^4.6.1"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@types/node": "^22.20.5",
+    "@types/nodemailer": "^8.0.2",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/supertest": "^7.2.1",
+    "@vitest/coverage-v8": "^5.0.3",
+    "happy-dom": "^20.14.5",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router": "^7.12.0",
+    "supertest": "^7.3.1",
+    "tsdown": "0.23.0",
+    "typescript": "^5",
+    "vitest": "^5.0.3"
+  }
+}

@@ -1,0 +1,68 @@
+version: 2
+
+updates:
+  # One root lockfile covers all workspaces (stack, CLI, template).
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    # Supply-chain hardening: skip versions younger than a week.
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      npm-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Prisma 8 (RC at the time of writing) has no MySQL/MariaDB support yet.
+      - dependency-name: prisma
+        versions: ["8.x"]
+      - dependency-name: "@prisma/*"
+        versions: ["8.x"]
+      # The types must match the oldest supported Node (engines: >=22.12).
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  # The template's Node base image (Dockerfile: one literal
+  # `FROM node:<version>-alpine<version> AS base` stage feeds all others).
+  - package-ecosystem: docker
+    directory: /packages/create-toto-app/template
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: build
+      include: scope
+
+  # The template's compose images (MariaDB in docker-compose.yml, Traefik in
+  # docker-compose.prod.yml).
+  - package-ecosystem: docker-compose
+    directory: /packages/create-toto-app/template
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: build
+      include: scope
+    ignore:
+      # Stay on the MariaDB 11.8 LTS line; patch releases only.
+      - dependency-name: mariadb
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]

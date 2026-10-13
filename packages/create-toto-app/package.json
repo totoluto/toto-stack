@@ -1,0 +1,62 @@
+{
+  "name": "create-toto-app",
+  "version": "0.1.0",
+  "description": "Scaffold a new toto-stack app: secure Express 5 + Prisma backend with auth/MFA/RBAC and a React client, pre-wired.",
+  "keywords": [
+    "create",
+    "scaffold",
+    "template",
+    "toto-stack",
+    "express",
+    "prisma",
+    "react",
+    "authentication",
+    "mfa",
+    "rbac"
+  ],
+  "homepage": "https://github.com/totoluto/toto-stack/tree/master/packages/create-toto-app#readme",
+  "bugs": {
+    "url": "https://github.com/totoluto/toto-stack/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/totoluto/toto-stack.git",
+    "directory": "packages/create-toto-app"
+  },
+  "license": "MIT",
+  "author": "totoluto",
+  "type": "module",
+  "bin": {
+    "create-toto-app": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "template",
+    "!template/**/node_modules",
+    "!template/**/dist",
+    "!template/**/coverage",
+    "!template/server/public",
+    "!template/server/data",
+    "!template/prisma/client",
+    "!template/logs",
+    "!template/**/.env",
+    "!template/**/.env.*",
+    "!template/**/*.tsbuildinfo",
+    "!template/**/*.tgz",
+    "!**/*.tgz",
+    "!template/**/.DS_Store",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "prepack": "node scripts/check-pack.mjs",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

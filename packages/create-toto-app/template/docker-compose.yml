@@ -1,0 +1,35 @@
+# Base services, shared by local development and production.
+#
+#   Local dev:   docker compose up -d db
+#                (also loads docker-compose.override.yml automatically)
+#   Production:  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#                (or set COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml in .env)
+#
+# Values come from .env (see sample.env). Each service only receives the
+# variables it needs; nothing is passed wholesale with env_file.
+#
+# Requires Docker Compose v2.1+ (`docker compose`, for --wait); works with
+# Docker Engine 20.10+.
+services:
+  db:
+    image: mariadb:11.8.9-noble
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env (see sample.env)}
+      MARIADB_DATABASE: ${MYSQL_DATABASE:?Set MYSQL_DATABASE in .env (see sample.env)}
+      MARIADB_USER: ${MYSQL_USER:?Set MYSQL_USER in .env (see sample.env)}
+      MARIADB_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env (see sample.env)}
+      # Run mariadb-upgrade automatically when the image version changes.
+      MARIADB_AUTO_UPGRADE: "1"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      # Failed checks during start_period don't count (first init can be slow).
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  db_data:

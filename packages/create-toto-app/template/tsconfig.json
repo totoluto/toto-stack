@@ -1,0 +1,21 @@
+{
+  // Server-side code and tooling configs (Node). The browser app has its own
+  // config in client/tsconfig.json so neither side sees the other's globals.
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "strict": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "paths": {
+      "@prismaClient/*": ["./prisma/client/*"]
+    }
+  },
+  "include": ["server", "prisma.config.ts", "client/vite.config.ts"]
+}

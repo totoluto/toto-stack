@@ -1,0 +1,28 @@
+.settings-tile {
+  display: flex;
+  gap: 14px;
+  padding: 18px;
+}
+
+.settings-tile h2 {
+  margin: 0;
+  text-align: left;
+  font-size: 1.05rem;
+}
+
+.settings-tile p {
+  margin: 6px 0 0;
+  text-align: left;
+}
+
+.settings-tile-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  color: var(--primary-ink);
+  flex-shrink: 0;
+}

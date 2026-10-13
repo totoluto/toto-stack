@@ -1,0 +1,106 @@
+# Production stack: one-shot migrations, the app, and Traefik (HTTPS via
+# Let's Encrypt). Use together with docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+services:
+  migrate:
+    build:
+      context: .
+      target: migrate
+    environment:
+      MYSQL_HOST: db
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      target: runtime
+    # tini as PID 1: forwards signals and reaps zombies.
+    init: true
+    # On SIGTERM the server drains requests (up to shutdown.timeoutMs,
+    # default 10 s), then waits for cron jobs (again up to timeoutMs), and
+    # force-exits at the latest timeoutMs + 5 s after the signal. Keep this
+    # above that (raise both together) so Docker doesn't SIGKILL mid-drain.
+    stop_grace_period: 30s
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      # Exactly one reverse-proxy hop (Traefik) sits in front of the app, so
+      # req.ip / rate limiting use the client address Traefik reports.
+      TRUST_PROXY: "1"
+      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in .env (openssl rand -base64 48)}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://${DOMAIN}}
+      # Required for the first-owner setup; set it explicitly when running
+      # more than one app instance (each would otherwise log its own token).
+      SETUP_TOKEN: ${SETUP_TOKEN:-}
+      TOTP_ISSUER: ${TOTP_ISSUER:-}
+      # Encrypts TOTP secrets at rest. Keep it stable: losing or changing it
+      # breaks MFA sign-in for every enrolled user.
+      OTP_ENCRYPTION_KEY: ${OTP_ENCRYPTION_KEY:-}
+      LOG_LEVEL: ${LOG_LEVEL:-}
+      MYSQL_HOST: db
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_SECURE: ${SMTP_SECURE:-}
+      # Add further app variables here explicitly.
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app.rule=Host(`${DOMAIN:?Set DOMAIN in .env (the public hostname, e.g. app.your-domain.com)}`)"
+      - "traefik.http.routers.app.entrypoints=websecure"
+      - "traefik.http.routers.app.tls.certresolver=letsencrypt"
+      # Compression happens here, not in Node (skips small and already-compressed bodies).
+      - "traefik.http.middlewares.compress.compress=true"
+      - "traefik.http.routers.app.middlewares=compress"
+      - "traefik.http.services.app.loadbalancer.server.port=3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  proxy:
+    image: traefik:v3.7.14
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # Redirect all HTTP traffic to HTTPS so `secure` session cookies work
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:?Set ACME_EMAIL in .env (Let's Encrypt account contact)}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--accesslog=true"
+      - "--accesslog.filepath=/logs/access.log"
+      - "--log.level=INFO"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # SECURITY: read access to the Docker socket is effectively root on the
+      # host (it exposes every container's config, env and secrets). Traefik
+      # needs it for label discovery; keep this proxy minimal and up to date,
+      # or put a docker-socket proxy (e.g. tecnativa/docker-socket-proxy) in between.
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./logs:/logs"
+      - "letsencrypt:/letsencrypt"
+    restart: unless-stopped
+
+volumes:
+  letsencrypt:

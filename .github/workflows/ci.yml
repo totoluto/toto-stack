@@ -1,0 +1,274 @@
+name: CI
+
+on:
+  # No branch filter: stacked PRs (based on other PR branches) get CI too.
+  pull_request:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  # Superseded PR runs are cancelled; every master commit keeps its result.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Node for the jobs without a version matrix (the release workflow uses it too).
+  # The matrices cover the engines floor (22.12.0) and the current 22/24/26 lines.
+  NODE_DEFAULT: "24"
+
+jobs:
+  build:
+    name: Build toto-stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_DEFAULT }}
+
+      - name: Build
+        run: npm run build:stack
+
+      # Every later job tests this exact build, including on Node 22.12, which
+      # the build tooling (tsdown: ^22.18) does not officially support.
+      - name: Upload dist
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: stack-dist
+          path: packages/stack/dist
+          if-no-files-found: error
+          retention-days: 3
+
+  verify:
+    name: Lint, typecheck, build app, audit
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_DEFAULT }}
+
+      - name: Download dist
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: stack-dist
+          path: packages/stack/dist
+
+      - name: Check release configuration
+        run: npm run check:release
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build template app
+        run: npm run build:app
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+  unit:
+    name: Unit tests (Node ${{ matrix.node }})
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["22.12.0", "22.x", "24.x", "26.x"]
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Download dist
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: stack-dist
+          path: packages/stack/dist
+
+      - name: Test
+        run: npm test
+
+      # On one version: coverage thresholds, and random order (guards against
+      # tests that depend on each other).
+      - name: Test with coverage thresholds
+        if: matrix.node == '24.x'
+        run: npm run test:coverage
+
+      - name: Test in random order
+        if: matrix.node == '24.x'
+        run: npm run test:shuffle -w toto-stack
+
+  cli-windows:
+    name: CLI tests (Windows, Node 24)
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      # Check out with LF endings, like the files in the npm tarball. Windows
+      # runners default to core.autocrlf=true, which would test CRLF templates
+      # that no user ever receives.
+      - name: Use LF line endings
+        run: git config --global core.autocrlf false
+
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_DEFAULT }}
+          package-manager-cache: false
+
+      # No install on purpose: the CLI and its tests use only node: builtins
+      # (zero dependencies is a design goal). This also keeps the job fast and
+      # independent of the template's postinstall (prisma generate).
+      - name: Test create-toto-app
+        run: npm test -w create-toto-app
+
+  integration:
+    name: Integration tests (MariaDB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mariadb:
+        # Same image as the template's docker-compose.yml.
+        image: mariadb:11.8.9-noble
+        env:
+          MARIADB_ROOT_PASSWORD: ci-root-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      # Dropped and recreated on every run (the name must contain "test").
+      TOTO_TEST_DATABASE_URL: mysql://root:ci-root-password@127.0.0.1:3306/toto_test
+      TOTO_TEST_DB_REQUIRED: "1"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_DEFAULT }}
+
+      - name: Integration tests
+        run: npm run test:integration
+
+  artifact:
+    name: Packed artifact (Node ${{ matrix.node }})
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["22.12.0", "22.x", "24.x", "26.x"]
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Download dist
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: stack-dist
+          path: packages/stack/dist
+
+      # publint and attw inspect the tarball, which doesn't depend on the
+      # runtime, so they run once (on 24.x).
+      - name: Artifact tests
+        run: npm run test:artifact -- --no-build ${{ matrix.node != '24.x' && '--skip-lint' || '' }}
+
+  scaffold:
+    name: Scaffold end-to-end (MariaDB, Docker)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # A plain `docker run` container (not a service container), so the test
+      # can attach it to its own network for the containerised migrate/runtime.
+      DB_CONTAINER: toto-mariadb-ci
+      DB_URL: mysql://root:ci-root-password@127.0.0.1:3306/toto_scaffold_test
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Same image as the template's docker-compose.yml. Started first so it
+      # initialises while dependencies install.
+      - name: Start MariaDB
+        run: |
+          docker run -d --name "$DB_CONTAINER" \
+            -e MARIADB_ROOT_PASSWORD=ci-root-password \
+            -p 127.0.0.1:3306:3306 \
+            --health-cmd "healthcheck.sh --connect --innodb_initialized" \
+            --health-interval 2s --health-retries 60 \
+            mariadb:11.8.9-noble
+
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_DEFAULT }}
+
+      - name: Download dist
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: stack-dist
+          path: packages/stack/dist
+
+      - name: Wait for MariaDB
+        run: |
+          for _ in $(seq 60); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' "$DB_CONTAINER")" = healthy ] && exit 0
+            sleep 2
+          done
+          docker logs "$DB_CONTAINER"
+          exit 1
+
+      # Packed CLI -> new app -> install -> `npm audit --omit=dev` of the app ->
+      # typecheck/build -> migrate -> production boot -> SIGTERM -> docker build
+      # of the runtime and migrate images -> both images run against MariaDB.
+      - name: Scaffold, build, boot, docker build and run an app
+        run: npm run test:scaffold -- --no-build --db-url "$DB_URL" --docker --docker-db "$DB_CONTAINER"

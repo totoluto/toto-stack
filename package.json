@@ -1,0 +1,46 @@
+{
+  "name": "toto-stack-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "packages/create-toto-app/template"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "npm run dev -w toto-app",
+    "build": "npm run build:stack && npm run build:app",
+    "build:stack": "npm run build -w toto-stack",
+    "build:app": "npm run build -w toto-app",
+    "lint": "eslint .",
+    "typecheck": "npm run typecheck -w toto-stack && npm run typecheck -w toto-app",
+    "test": "npm run test -w toto-stack && npm run test -w create-toto-app --if-present",
+    "test:coverage": "npm run test:coverage -w toto-stack",
+    "test:integration": "npm run test:integration -w toto-stack",
+    "test:artifact": "node scripts/test-artifacts.mjs",
+    "test:scaffold": "node scripts/scaffold-e2e.mjs",
+    "check": "npm run build:stack && npm run lint && npm run typecheck && npm test && npm run build:app",
+    "check:release": "node scripts/check-release.mjs",
+    "changeset": "changeset",
+    "version-packages": "changeset version && npm install --package-lock-only --ignore-scripts --no-audit --no-fund && node scripts/check-release.mjs",
+    "audit": "npm audit",
+    "start": "npm run start -w toto-app"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^3.0.3",
+    "@eslint/js": "^9.39.2",
+    "eslint": "^9.39.2",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.26",
+    "globals": "^17.0.0",
+    "typescript": "^5",
+    "typescript-eslint": "^8.52.0"
+  },
+  "overrides": {
+    "mariadb": "^3.5.4",
+    "mysql2": "^3.24.5",
+    "deepmerge-ts": "^8.0.2"
+  }
+}

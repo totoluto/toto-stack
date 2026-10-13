@@ -1,0 +1,230 @@
+.landing-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+/* Hero Section */
+.landing-hero {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.hero-content {
+  max-width: 700px;
+}
+
+.hero-title {
+  font-size: 64px;
+  font-weight: 800;
+  margin: 0 0 16px;
+  color: var(--text-primary);
+  letter-spacing: -2px;
+}
+
+.hero-subtitle {
+  font-size: 24px;
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+
+.hero-description {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0 0 40px;
+  line-height: 1.6;
+}
+
+.hero-cta,
+.footer-cta {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.hero-cta:hover,
+.footer-cta:hover {
+  text-decoration: none;
+}
+
+.hero-cta {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  color: white;
+  border: none;
+  padding: 14px 48px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(63, 81, 181, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hero-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(63, 81, 181, 0.4);
+}
+
+.hero-cta:active {
+  transform: translateY(0);
+}
+
+/* Features Section */
+.landing-features {
+  padding: 80px 20px;
+  background: var(--bg-primary);
+}
+
+.features-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.feature-card {
+  padding: 32px;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--rule);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.feature-card:hover {
+  border-color: var(--primary-ink);
+  background: var(--bg-elevated-alt);
+  box-shadow: 0 8px 24px rgba(135, 162, 255, 0.15);
+  transform: translateY(-4px);
+}
+
+.feature-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(135, 162, 255, 0.1);
+  color: var(--primary-ink);
+  font-size: 24px;
+}
+
+.feature-card h3 {
+  font-size: 18px;
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.feature-card p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Footer Section */
+.landing-footer-section {
+  padding: 80px 20px;
+  background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-elevated-alt) 100%);
+  border-top: 1px solid var(--rule);
+}
+
+.footer-content {
+  max-width: 700px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.footer-content h2 {
+  font-size: 36px;
+  margin: 0 0 12px;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.footer-content p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0 0 32px;
+  line-height: 1.6;
+}
+
+.footer-cta {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  color: white;
+  border: none;
+  padding: 14px 48px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(63, 81, 181, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.footer-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(63, 81, 181, 0.4);
+}
+
+.footer-cta:active {
+  transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .landing-hero {
+    padding: 40px 20px;
+  }
+
+  .hero-title {
+    font-size: 44px;
+    letter-spacing: -1px;
+  }
+
+  .hero-subtitle {
+    font-size: 18px;
+  }
+
+  .hero-description {
+    font-size: 14px;
+  }
+
+  .landing-features {
+    padding: 60px 20px;
+  }
+
+  .features-container {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-card {
+    padding: 24px;
+  }
+
+  .landing-footer-section {
+    padding: 60px 20px;
+  }
+
+  .footer-content h2 {
+    font-size: 28px;
+  }
+
+  .footer-content p {
+    font-size: 14px;
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "name": "toto-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "postinstall": "node scripts/generate.js",
+    "dev": "concurrently -k -n server,client -c blue,green \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "tsx watch --clear-screen=false --env-file-if-exists=.env --import ./scripts/dev-env.js server/index.ts",
+    "dev:client": "vite --config client/vite.config.ts",
+    "typecheck": "tsc -p tsconfig.json && tsc -p client/tsconfig.json",
+    "build": "prisma generate && npm run build:client && npm run build:server",
+    "build:client": "vite build --config client/vite.config.ts",
+    "build:server": "node scripts/build-server.js",
+    "start": "node --env-file-if-exists=.env dist/server.js",
+    "db:generate": "prisma generate",
+    "db:deploy": "prisma migrate deploy",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/adapter-mariadb": "^7.10.0",
+    "toto-stack": "^0.1.0"
+  },
+  "devDependencies": {
+    "@prisma/client": "^7.10.0",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5.1.2",
+    "concurrently": "^9.2.1",
+    "esbuild": "^0.28.0",
+    "prisma": "^7.10.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-icons": "^5.5.0",
+    "react-router": "^7.18.4",
+    "tsx": "^4.19.3",
+    "typescript": "^5",
+    "vite": "^7.3.1"
+  },
+  "overrides": {
+    "mariadb": "^3.5.4",
+    "mysql2": "^3.24.5",
+    "deepmerge-ts": "^8.0.2"
+  }
+}

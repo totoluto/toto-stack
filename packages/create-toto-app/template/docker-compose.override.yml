@@ -1,0 +1,11 @@
+# Local development additions. `docker compose` loads this file automatically
+# when no -f flag is given; the production command above does not.
+services:
+  db:
+    ports:
+      # Loopback only: `npm run dev` on this machine can reach the DB, the network can't.
+      - "127.0.0.1:${MYSQL_PORT:-3306}:3306"
+    volumes:
+      # Lets MYSQL_USER create Prisma's throwaway shadow databases so
+      # `npm run db:migrate` (prisma migrate dev) works. Runs on first init only.
+      - ./docker/db-init-dev:/docker-entrypoint-initdb.d:ro

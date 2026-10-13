@@ -1,0 +1,11 @@
+node_modules
+dist
+server/public
+prisma/client
+logs
+coverage
+*.tsbuildinfo
+.DS_Store
+.env
+.env.*
+!sample.env

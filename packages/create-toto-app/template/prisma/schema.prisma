@@ -1,0 +1,79 @@
+// Generates an ESM TypeScript client into prisma/client (git-ignored). It is
+// bundled into dist/server.js by `npm run build`, so production needs no
+// generate step. Engine binaryTargets are not needed: the client runs on the
+// driver adapter (@prisma/adapter-mariadb), not on a native query engine.
+generator client {
+  provider     = "prisma-client"
+  output       = "./client"
+  moduleFormat = "esm"
+}
+
+// The connection URL is built from MYSQL_* in prisma.config.ts.
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id              Int        @id @default(autoincrement())
+  username        String     @unique
+  /// Argon2id PHC string ($argon2id$v=19$m=...,t=...,p=...$salt$hash); rehashed on login when the configured parameters change
+  password        String
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  /// SHA-256 of the user's API key; null until the user issues one
+  apiKey          String?    @unique
+  /// Base32 TOTP secret, or "enc:v1:..." when OTP_ENCRYPTION_KEY is set
+  otpSecret       String?
+  otpEnabled      Boolean    @default(false)
+  /// Last accepted TOTP time step (replay protection)
+  otpLastUsedStep Int?
+  roles           UserRole[]
+  sessions        Session[]
+  setupLock       SetupLock?
+}
+
+model UserRole {
+  id     Int @id @default(autoincrement())
+  userId Int
+  roleId Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([roleId])
+}
+
+model Role {
+  id    Int        @id @default(autoincrement())
+  name  String     @unique
+  users UserRole[]
+}
+
+model Session {
+  id     String @id
+  userId Int?
+  user   User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  data      Json
+  ipAddress String?
+  /// Truncated to 512 characters when written
+  userAgent String? @db.VarChar(512)
+
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  expiresAt  DateTime
+
+  @@index([expiresAt])
+  @@index([userId])
+}
+
+/// Singleton row (id = 1) created in the same transaction as the first owner.
+/// Its fixed primary key makes concurrent first-run setups mutually exclusive
+/// on every database. It is removed with that user.
+model SetupLock {
+  id        Int      @id
+  userId    Int      @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}

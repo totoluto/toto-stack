@@ -1,0 +1,123 @@
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
+}
+
+.login input {
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 4px;
+    color: var(--text-primary);
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.login .logo-container {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.login .logo-container img {
+    width: 100px;
+    height: auto;
+}
+
+.login {
+    background-color: var(--bg-elevated);
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: var(--shadow-l);
+    min-width: 300px;
+}
+
+.login button {
+    width: 100%;
+}
+
+.login p {
+    max-width: 320px;
+    margin: 0 auto 15px;
+}
+
+.otp-field input {
+  width: 3ch;
+  font-size: 32px;
+  padding: 10px;
+  text-align: center;
+  border-radius: 5px;
+  margin: 5px;
+}
+
+.otp-field {
+  margin: 20px 0;
+}
+
+.space {
+  margin-right: 1rem !important;
+}
+
+.copy-field {
+  display: flex;
+  align-content: space-between;
+  background-color: #333;
+  border-radius: 4px;
+}
+
+.copy-field input {
+  flex: 1;
+  margin: 0;
+  caret-color: transparent;
+  box-shadow: none;
+}
+
+.copy-field button {
+  padding: 0 12px;
+  width: fit-content;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.copy-field button:hover {
+  background-color: #2A2A2A;
+}
+
+.copy-field-wrapper label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+@media (max-width: 480px) {
+  .login {
+    width: 100%;
+    min-width: 0;
+    padding: 22px;
+    box-sizing: border-box;
+  }
+
+  .otp-field {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    flex-wrap: nowrap;
+  }
+
+  .otp-field input {
+    width: 2.4ch;
+    font-size: 24px;
+    padding: 8px 4px;
+    margin: 2px;
+  }
+
+  .space {
+    margin-right: 0.5rem !important;
+  }
+}
+.login .field-help {
+    margin: 4px 0 0;
+    font-size: 12px;
+    text-align: left;
+    color: var(--text-secondary);
+}

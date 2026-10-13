@@ -1,0 +1,22 @@
+name: Set up workspace
+description: Installs Node.js and the workspace dependencies (npm ci, cached). Expects the repository to be checked out.
+
+inputs:
+  node-version:
+    description: Node.js version (anything actions/setup-node accepts).
+    default: "24"
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js ${{ inputs.node-version }}
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: npm
+
+    # Also generates the template's Prisma client (its postinstall), which
+    # the template typecheck/build and the integration suite need.
+    - name: Install dependencies
+      shell: bash
+      run: npm ci --no-audit --no-fund

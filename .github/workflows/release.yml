@@ -1,0 +1,171 @@
+name: Release
+
+# Changesets release flow (https://changesets.dev/guide/automating):
+#   - pending changesets on master -> open/update the "Version Packages" PR
+#   - no changesets and unpublished versions -> build, test, pack, then publish
+#     with npm trusted publishing (OIDC, no npm token) and provenance.
+#
+# Publishing is OFF until a maintainer finishes the one-time setup in
+# .github/RELEASING.md and sets the repository variable NPM_PUBLISH_ENABLED=true.
+# The publish job also runs in the `npm` environment, which can require
+# reviewer approval.
+
+on:
+  push:
+    branches:
+      - master
+
+# Reset, then grant per job: only the publish job can mint an OIDC token.
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  # Never cancel a release halfway through.
+  cancel-in-progress: false
+
+jobs:
+  select-mode:
+    name: Select mode
+    if: github.repository == 'totoluto/toto-stack'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      mode: ${{ steps.select-mode.outputs.mode }}
+      publish-plan-artifact-id: ${{ steps.select-mode.outputs.publish-plan-artifact-id }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Select Changesets mode
+        id: select-mode
+        uses: changesets/action/select-mode@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+
+      - name: Report a skipped publish
+        if: steps.select-mode.outputs.mode == 'publish' && vars.NPM_PUBLISH_ENABLED != 'true'
+        run: echo "::notice title=Publishing disabled::Unpublished versions found, but the repository variable NPM_PUBLISH_ENABLED is not 'true'. Nothing was published (see .github/RELEASING.md)."
+
+  version:
+    name: Open the Version Packages PR
+    needs: select-mode
+    if: needs.select-mode.outputs.mode == 'version'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # commit the version bump
+      pull-requests: write # open/update the PR
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Version packages
+        uses: changesets/action/version@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        with:
+          # changeset version + lockfile refresh + release invariants check
+          script: npm run version-packages
+          commit-message: "chore(release): version packages"
+          pr-title: "chore(release): version packages"
+
+  pack:
+    name: Verify and pack
+    needs: select-mode
+    if: needs.select-mode.outputs.mode == 'publish' && vars.NPM_PUBLISH_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    outputs:
+      pack-dir-artifact-id: ${{ steps.pack.outputs.pack-dir-artifact-id }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      # Version PRs opened with GITHUB_TOKEN don't trigger CI, so the exact
+      # commit being published is verified here.
+      - name: Check release configuration
+        run: npm run check:release
+
+      - name: Build, lint, typecheck and test
+        run: npm run check
+
+      - name: Pack
+        id: pack
+        uses: changesets/action/pack@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        with:
+          publish-plan-artifact-id: ${{ needs.select-mode.outputs.publish-plan-artifact-id }}
+
+  publish:
+    name: Publish to npm
+    needs: pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/toto-stack
+    permissions:
+      contents: write # push release tags and create GitHub releases
+      id-token: write # npm trusted publishing (OIDC) and provenance
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      # Only the changesets CLI is needed: the tarballs come from the pack job.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Require npm >= 11.5.1 (trusted publishing)
+        run: |
+          npm --version
+          node -e 'const [a, b, c] = process.argv[1].split(".").map(Number); process.exit(a > 11 || (a === 11 && (b > 5 || (b === 5 && c >= 1))) ? 0 : 1)' "$(npm --version)" \
+            || { echo "::error::npm >= 11.5.1 is required for trusted publishing"; exit 1; }
+
+      - name: Publish
+        uses: changesets/action/publish@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        with:
+          pack-dir-artifact-id: ${{ needs.pack.outputs.pack-dir-artifact-id }}
+        env:
+          # Fail instead of publishing without provenance (e.g. while the
+          # repository is still private, where npm can't generate it).
+          NPM_CONFIG_PROVENANCE: "true"

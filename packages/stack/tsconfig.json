@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "types": ["node"],
+    "strict": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "toto-stack/shared": ["./src/shared.ts"],
+      "toto-stack/client": ["./src/client.ts"],
+      "toto-stack": ["./src/index.ts"],
+      "@server/*": ["./src/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@client/*": ["../create-toto-app/template/client/src/*"]
+    }
+  },
+  "include": ["src/**/*", "tests/**/*", "vitest.config.ts"]
+}
