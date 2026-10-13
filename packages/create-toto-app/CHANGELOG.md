@@ -1,5 +1,9 @@
 # create-toto-app
 
+## 0.1.1
+
+No changes in this release.
+
 ## 0.1.0
 
 Initial release: scaffolds a ready-to-run toto-stack app (`npm create toto-app@latest <directory>`).

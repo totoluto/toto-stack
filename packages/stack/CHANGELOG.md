@@ -1,5 +1,11 @@
 # toto-stack
 
+## 0.1.1
+
+### Patch Changes
+
+- cc611a9: Add a session revoke api for user managed session invalidation
+
 ## 0.1.0
 
 Initial release: a security-focused foundation for Express 5 + Prisma 7 apps. ESM only; Node.js ≥ 22.12, so CommonJS apps load it through `require(esm)`.
