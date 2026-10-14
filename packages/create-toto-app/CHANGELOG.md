@@ -1,5 +1,11 @@
 # create-toto-app
 
+## 0.1.2
+
+### Patch Changes
+
+- Refine Changesets configuration, update Git ignore rules, and improve script defaults [#13](https://github.com/totoluto/toto-stack/pull/13) by [@totoluto](https://github.com/totoluto)
+
 ## 0.1.1
 
 No changes in this release.
