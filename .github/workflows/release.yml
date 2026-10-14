@@ -88,7 +88,8 @@ jobs:
           script: npm run version-packages
           commit-message: "chore(release): version packages"
           pr-title: "chore(release): version packages"
-
+        env:
+          GITHUB_TOKEN: ${{ secrets.CHANGELOG_GITHUB_TOKEN }}
   pack:
     name: Verify and pack
     needs: select-mode
