@@ -255,7 +255,7 @@ export function main({
             allowPositionals: true,
             allowNegative: true,
             options: {
-                git: {type: "boolean", default: false},
+                git: {type: "boolean", default: true},
                 help: {type: "boolean", short: "h"},
                 version: {type: "boolean", short: "v"},
             },
