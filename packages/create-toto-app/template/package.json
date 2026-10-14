@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.10.0",
-    "toto-stack": "^0.1.1"
+    "toto-stack": "^0.1.2"
   },
   "devDependencies": {
     "@prisma/client": "^7.10.0",
