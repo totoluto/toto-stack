@@ -30,8 +30,8 @@ Creates a new toto-stack app in <directory> (a valid npm package name),
 or in the current directory when <directory> is "." (it must be empty).
 
 Options:
-  --git          Initialize a git repository in the new app
-  --no-git       Do not initialize a git repository (default)
+  --git          Initialize a git repository in the new app (default)
+  --no-git       Do not initialize a git repository
   -h, --help     Show this help
   -v, --version  Show the create-toto-app version
 `;
@@ -255,7 +255,7 @@ export function main({
             allowPositionals: true,
             allowNegative: true,
             options: {
-                git: {type: "boolean", default: false},
+                git: {type: "boolean", default: true},
                 help: {type: "boolean", short: "h"},
                 version: {type: "boolean", short: "v"},
             },
