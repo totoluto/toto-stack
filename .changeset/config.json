@@ -3,7 +3,7 @@
   "changelog": [
     "@changesets/changelog-github",
     {
-      "disableThanks": true,
+      "disableThanks": false,
       "template": "\n\n- {summary} {pull} by {authors}"
     }
   ],
