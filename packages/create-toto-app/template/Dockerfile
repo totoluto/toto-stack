@@ -4,7 +4,7 @@
 # build arg) so Dependabot's docker ecosystem can propose updates; change it
 # here to use another Node version. Optionally pin a digest too:
 # node:24.21.0-alpine3.24@sha256:...
-FROM node:24.21.0-alpine3.24 AS base
+FROM node:26.12.0-alpine3.24 AS base
 
 # ---- deps: full dependency tree (build tools + Prisma CLI) ----
 FROM base AS deps
