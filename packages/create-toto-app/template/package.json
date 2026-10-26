@@ -22,23 +22,23 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
-    "@prisma/adapter-mariadb": "^7.10.0",
+    "@prisma/adapter-mariadb": "^7.10.1",
     "toto-stack": "^0.1.1"
   },
   "devDependencies": {
-    "@prisma/client": "^7.10.0",
+    "@prisma/client": "^7.10.1",
     "@types/node": "^22.20.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^5.1.2",
     "concurrently": "^9.2.1",
-    "esbuild": "^0.28.0",
-    "prisma": "^7.10.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-icons": "^5.5.0",
+    "esbuild": "^0.28.2",
+    "prisma": "^7.10.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-icons": "^5.7.0",
     "react-router": "^7.18.4",
-    "tsx": "^4.19.3",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vite": "^7.3.1"
   },
