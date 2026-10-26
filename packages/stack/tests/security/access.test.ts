@@ -58,9 +58,9 @@ describe("role granting (H1)", () => {
 
     it("a delete racing another delete answers 404, not 500", async () => {
         const id = await createUserVia(owner, "racer", "racer-password-1");
-        const findFirst = fakePrisma.user.findFirst;
-        fakePrisma.user.findFirst = async args => {
-            const user = await findFirst(args);
+        const findUnique = fakePrisma.user.findUnique;
+        fakePrisma.user.findUnique = async args => {
+            const user = await findUnique(args);
             await sleep(10); // both requests see the user before either deletes it
             return user;
         };
@@ -70,7 +70,7 @@ describe("role granting (H1)", () => {
             expect([first.status, second.status].sort()).toEqual([200, 404]);
             expect([first, second].find(res => res.status === 404)!.body.code).toBe("USER_NOT_FOUND");
         } finally {
-            fakePrisma.user.findFirst = findFirst;
+            fakePrisma.user.findUnique = findUnique;
         }
     });
 

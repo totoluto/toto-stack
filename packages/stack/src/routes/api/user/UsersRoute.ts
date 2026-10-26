@@ -1,4 +1,10 @@
-import {BaseRoute, canGrantRole, createUserSchema, ErrorCode, respond, Role, sendError, type Dependencies} from "toto-stack";
+import {BaseRoute} from "@server/routes/BaseRoute";
+import {canGrantRole, Role} from "@shared/roles";
+import {createUserSchema} from "@server/libs/security/validation";
+import {ErrorCode} from "@shared/errorCodes";
+import {respond} from "@server/libs/utils/helpers";
+import {sendError} from "@server/libs/ErrorHandler";
+import type {Dependencies} from "@server/libs/Dependencies";
 
 /**
  * /api/users: user management for admins and owners.
@@ -56,8 +62,11 @@ export class UsersRoute extends BaseRoute {
 
         this.delete("/:id", async (req, res) => {
             const actor = this.currentUser(req);
-            const userId = Number(req.params.id);
-            if (!Number.isInteger(userId) || userId < 1) {
+            const id = req.params.id;
+            const userId = Number(id);
+            // Prisma's Int is signed 32-bit. Reject coercible aliases (hex,
+            // exponent notation, whitespace) and overflow before querying it.
+            if (typeof id !== "string" || !/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(userId) || userId > 2_147_483_647) {
                 return sendError(res, 400, "Invalid user id.", {code: ErrorCode.INVALID_USER_ID});
             }
 
@@ -65,7 +74,7 @@ export class UsersRoute extends BaseRoute {
                 return sendError(res, 400, "You cannot delete your own account.", {code: ErrorCode.CANNOT_DELETE_SELF});
             }
 
-            const target = await userService.getById(userId);
+            const target = await userService.getSessionUser(userId);
             if (!target) {
                 return sendError(res, 404, "User not found.", {code: ErrorCode.USER_NOT_FOUND});
             }

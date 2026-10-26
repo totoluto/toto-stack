@@ -64,7 +64,7 @@ export const mfaDisableSchema = z.object({
 export type MfaDisablePayload = z.infer<typeof mfaDisableSchema>;
 
 /**
- * Body of a "create user" request (the template's POST /api/users): a
+ * Body of a "create user" request (the built-in POST /api/users): a
  * username, a password following the stack's password policy and optional
  * roles, which must be configured role names (duplicates are removed).
  * Whether the caller may grant those roles is checked separately (canGrantRole).

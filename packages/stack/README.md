@@ -354,16 +354,18 @@ Register it with `createServer({prisma, routes: [TodoRoute]})`.
   - `respond(res, status, "success" | "error", message, data?)` and `sendError(res, status, message, {code?, details?})` write the standard [envelope](#errors).
   - `getRequestIP(req)` returns the validated client IP (honouring `TRUST_PROXY`, with IPv4-mapped IPv6 unwrapped), or `undefined`. Never parse `X-Forwarded-For` yourself.
 - **CSRF:** state-changing requests (anything but GET/HEAD/OPTIONS) to any `/api` route, yours included, need an `X-CSRF-Token` header unless they authenticate with `Authorization: Bearer`. `apiFetch` handles this in the browser.
-- **Route order:** the built-in routes (`/api/auth`, `/api/account`, `/api/health`) are mounted before yours, so don't reuse their paths.
+- **Route order:** the built-in routes (`/api/auth`, `/api/account`, `/api/users`, `/api/health`) are mounted before yours, so don't reuse their paths.
 - **Unknown paths:** unknown `/api` paths return a JSON 404.
 
 ### Routes in a scaffolded app
 
-The stack only mounts the routes the sign-in flow and account security depend on. A `create-toto-app` app keeps its own routes in `server/routes` and registers them in `server/index.ts`:
+The stack always mounts auth, account security, user management and health. `GET`/`POST /api/users` and `DELETE /api/users/:id` are core APIs restricted to admins and owners, with protected owner accounts and no credential fields in responses. See the [API reference](../../docs/api.md#users-apiusers).
+
+A `create-toto-app` app keeps its additional routes in `server/routes` and registers them in `server/index.ts`:
 
 ```ts
 // server/routes/index.ts
-export const routes: RouteClass[] = [StatusRoute, UsersRoute, NotificationRoute];
+export const routes: RouteClass[] = [StatusRoute, NotificationRoute];
 
 // server/index.ts
 createServer({prisma, routes, /* ... */});
@@ -372,10 +374,9 @@ createServer({prisma, routes, /* ... */});
 | File | Endpoints | Notes |
 |---|---|---|
 | `StatusRoute.ts` | `GET /api/status` | Public liveness check; an example of `{auth: false}`. |
-| `UsersRoute.ts` | `GET /api/users`, `POST /api/users`, `DELETE /api/users/:id` | Admin. Uses `userService`, `createUserSchema` (the stack's password policy and the configured roles) and `canGrantRole`. |
 | `NotificationRoute.ts` | `GET /api/notifications/handlers`, `POST /api/notifications/send` | Admin. Uses `notificationService` and `sendNotificationSchema`. |
 
-The files are yours: change them, delete them, or add routes next to them. The doc comments in `UsersRoute.ts` and `NotificationRoute.ts` list the security rules to keep if you change them (who may grant and delete what, no secrets in responses, no remote error text). Everything they use is public API: `BaseRoute`, `respond`, `sendError`, `ErrorCode`, `Role`, `canGrantRole`, the schemas and the services on `this.dependencies`.
+The files are yours: change them, delete them, or add routes next to them. The doc comment in `NotificationRoute.ts` lists the security rules to keep if you change it (no remote error text in responses). Everything they use is public API: `BaseRoute`, `respond`, `sendError`, `ErrorCode`, `Role`, the schemas and the services on `this.dependencies`. User management is maintained in `toto-stack`, not copied into your app.
 
 ## Custom services
 

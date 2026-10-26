@@ -95,11 +95,12 @@ The first run therefore works without editing anything. It contains secrets: don
 
 | File | Endpoints |
 |---|---|
-| `server/routes/UsersRoute.ts` | `GET`/`POST /api/users`, `DELETE /api/users/:id` (admins and owners) |
 | `server/routes/NotificationRoute.ts` | `GET /api/notifications/handlers`, `POST /api/notifications/send` (admins and owners) |
 | `server/routes/StatusRoute.ts` | `GET /api/status` (public) |
 
-Change, remove or add routes there; add new ones to the list in `server/routes/index.ts`. The comments in `UsersRoute.ts` and `NotificationRoute.ts` list the security rules to keep. See [Routes](https://github.com/totoluto/toto-stack/tree/master/packages/stack#routes) for `BaseRoute` and the [API reference](https://github.com/totoluto/toto-stack/blob/master/docs/api.md) for the endpoints.
+User management (`GET`/`POST /api/users`, `DELETE /api/users/:id`) is built into `toto-stack`, alongside auth, account security and health. It is not copied into the app.
+
+Change, remove or add routes there; add new ones to the list in `server/routes/index.ts`. The comments in `NotificationRoute.ts` list the security rules to keep. See [Routes](https://github.com/totoluto/toto-stack/tree/master/packages/stack#routes) for `BaseRoute` and the [API reference](https://github.com/totoluto/toto-stack/blob/master/docs/api.md) for the endpoints.
 
 **Overrides.** `package.json` contains npm `overrides` that replace vulnerable driver versions pinned by `@prisma/adapter-mariadb`. Keep them until Prisma updates its pin.
 

@@ -12,6 +12,7 @@ import {AccountRoute} from "@server/routes/api/account/AccountRoute";
 import {notFoundHandler, sendError} from "@server/libs/ErrorHandler";
 import {ErrorCode} from "@shared/errorCodes";
 import type {FrontendConfig} from "@server/libs/config/StackConfig";
+import {UsersRoute} from "@server/routes/api/user/UsersRoute";
 
 /** A BaseRoute subclass; instantiated once per server with its dependencies. */
 export type RouteClass = new (dependencies: Dependencies) => BaseRoute;
@@ -20,10 +21,9 @@ export type RouteClass = new (dependencies: Dependencies) => BaseRoute;
 const SESSIONLESS_ROUTES: RouteClass[] = [HealthRoute];
 
 /**
- * The built-in session-based API routes: the sign-in flow (/auth) and the
- * signed-in user's own credentials (/account). Everything else (user
- * management, notifications, status, ...) is app code passed in `routes`;
- * the scaffolded app ships those in server/routes.
+ * The built-in session-based API routes: the sign-in flow (/auth), the
+ * signed-in user's own credentials (/account), and user management (/users).
+ * Notifications, status and other app APIs are passed in `routes`.
  */
 const BUILTIN_ROUTES: RouteClass[] = [
     LoginRoute,
@@ -32,6 +32,7 @@ const BUILTIN_ROUTES: RouteClass[] = [
     MeRoute,
     SetupRoute,
     AccountRoute,
+    UsersRoute,
 ];
 
 /** /api/health: no session lookup, so health checks never touch the session table. Other paths fall through. */
