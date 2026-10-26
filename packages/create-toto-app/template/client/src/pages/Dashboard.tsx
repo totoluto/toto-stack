@@ -83,7 +83,7 @@ export default function Dashboard() {
             </div>
             <div className="compact-row">
               <strong>✓ Authentication Configured</strong>
-              <span>Password sign-in with mandatory TOTP two-factor authentication.</span>
+              <span>Password sign-in with configurable TOTP two-factor authentication.</span>
             </div>
             <div className="compact-row">
               <strong>→ Build your app</strong>

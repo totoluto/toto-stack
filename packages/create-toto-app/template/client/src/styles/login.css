@@ -1,123 +1,54 @@
 .login-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  padding: max(2rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(2rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  background: radial-gradient(ellipse at 50% 15%, rgba(63, 81, 181, 0.1), transparent 60%), var(--bg-primary);
 }
-
-.login input {
-    padding: 10px;
-    font-size: 16px;
-    border-radius: 4px;
-    color: var(--text-primary);
-    box-sizing: border-box;
-    width: 100%;
-}
-
-.login .logo-container {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.login .logo-container img {
-    width: 100px;
-    height: auto;
-}
-
 .login {
-    background-color: var(--bg-elevated);
-    border-radius: 8px;
-    padding: 30px;
-    box-shadow: var(--shadow-l);
-    min-width: 300px;
+  width: 100%;
+  max-width: 27rem;
+  min-width: 0;
+  padding: clamp(1.25rem, 5vw, 2.5rem);
+  border: 1px solid var(--surface-border);
+  border-radius: 1.5rem;
+  background: linear-gradient(145deg, var(--surface-highlight), transparent 65%), var(--bg-elevated);
+  box-shadow: var(--shadow-l);
 }
-
-.login button {
-    width: 100%;
-}
-
-.login p {
-    max-width: 320px;
-    margin: 0 auto 15px;
-}
-
+.login h2 { font-size: 1.5rem; text-align: center; margin: 0 0 1rem; }
+.login input { font-size: 1rem; }
+.login .logo-container { text-align: center; margin-bottom: 1.75rem; }
+.login .logo-container img { width: 4.5rem; height: auto; }
+.login button { width: 100%; }
+.login p { margin: 0 auto 1.5rem; text-align: center; font-size: 0.9375rem; line-height: 1.6; }
+.login .center-items img { max-width: 100%; height: auto; border-radius: 0.75rem; }
+.otp-field { display: flex; justify-content: center; gap: 0.375rem; margin: 1.5rem 0; }
 .otp-field input {
-  width: 3ch;
-  font-size: 32px;
-  padding: 10px;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 2.75rem;
+  min-height: 3.25rem;
+  padding: 0.5rem 0;
+  font-size: clamp(1.25rem, 5vw, 1.75rem);
+  font-variant-numeric: tabular-nums;
   text-align: center;
-  border-radius: 5px;
-  margin: 5px;
+  border-radius: 0.625rem;
 }
-
-.otp-field {
-  margin: 20px 0;
-}
-
-.space {
-  margin-right: 1rem !important;
-}
-
+.space { margin-right: 0.375rem; }
 .copy-field {
   display: flex;
-  align-content: space-between;
-  background-color: #333;
-  border-radius: 4px;
+  align-items: stretch;
+  min-width: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-control);
 }
-
-.copy-field input {
-  flex: 1;
-  margin: 0;
-  caret-color: transparent;
-  box-shadow: none;
-}
-
-.copy-field button {
-  padding: 0 12px;
-  width: fit-content;
-  background-color: transparent;
-  box-shadow: none;
-}
-
-.copy-field button:hover {
-  background-color: #2A2A2A;
-}
-
-.copy-field-wrapper label {
-  display: block;
-  margin-bottom: 4px;
-}
-
-@media (max-width: 480px) {
-  .login {
-    width: 100%;
-    min-width: 0;
-    padding: 22px;
-    box-sizing: border-box;
-  }
-
-  .otp-field {
-    display: flex;
-    justify-content: center;
-    gap: 4px;
-    flex-wrap: nowrap;
-  }
-
-  .otp-field input {
-    width: 2.4ch;
-    font-size: 24px;
-    padding: 8px 4px;
-    margin: 2px;
-  }
-
-  .space {
-    margin-right: 0.5rem !important;
-  }
-}
-.login .field-help {
-    margin: 4px 0 0;
-    font-size: 12px;
-    text-align: left;
-    color: var(--text-secondary);
-}
+.copy-field input { flex: 1; margin: 0; min-width: 0; caret-color: transparent; box-shadow: none; border-color: transparent; }
+.copy-field button { flex-shrink: 0; padding: 0.5rem 0.75rem; width: auto; min-width: 2.75rem; background: transparent; box-shadow: none; color: var(--text-secondary); }
+.copy-field button:hover { background: var(--bg-hover); color: var(--text-primary); }
+.copy-field-wrapper label { margin-bottom: 0.5rem; }
+.login .field-help { margin: 0.5rem 0 0; font-size: 0.8125rem; text-align: left; }
+@media (max-height: 650px) { .login-container { align-items: flex-start; } }

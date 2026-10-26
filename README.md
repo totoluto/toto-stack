@@ -62,7 +62,7 @@ This is an npm workspaces monorepo (npm with lockfile v3; don't use other packag
 
 ```bash
 npm ci                 # also generates the template's Prisma client
-npm run build:stack    # the template imports toto-stack's dist/
+`npm run build:stack `   # the template imports toto-stack's dist/
 npm run dev            # runs the template app (client :3000, API :3001)
 ```
 

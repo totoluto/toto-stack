@@ -1,10 +1,15 @@
 import {defineConfig} from "vitest/config";
 import {fileURLToPath} from "node:url";
+import {createRequire} from "node:module";
 
 const fromRoot = (relative: string) => fileURLToPath(new URL(relative, import.meta.url));
+const require = createRequire(import.meta.url);
 
 /** Source aliases, shared with vitest.integration.config.ts. */
 export const alias = [
+    // Workspace hoisting may install a second router under create-toto-app.
+    // Tests and template components must share the same Router context.
+    {find: "react-router", replacement: require.resolve("react-router")},
     {find: "toto-stack/shared", replacement: fromRoot("./src/shared.ts")},
     {find: "toto-stack/client", replacement: fromRoot("./src/client.ts")},
     {find: "toto-stack", replacement: fromRoot("./src/index.ts")},
