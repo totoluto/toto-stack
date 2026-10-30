@@ -110,7 +110,7 @@
     "happy-dom": "^21.0.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router": "^7.12.0",
+    "react-router": "^8.5.0",
     "supertest": "^7.3.1",
     "tsdown": "0.23.0",
     "typescript": "^5",
