@@ -65,7 +65,7 @@ my-app/
 ├── client/                      React 19 + Vite + react-router: login, MFA, setup and settings screens, layout
 ├── server/
 │   ├── index.ts                 createServer({...}): add your services, jobs and hooks here
-│   ├── routes/                  the app's API routes (users, notifications, status): yours to edit
+│   ├── routes/                  the app's API routes (notifications, status): yours to edit
 │   └── prisma.ts                Prisma client with the MariaDB driver adapter
 ├── prisma/
 │   ├── schema.prisma            toto-stack's models (User, Role, UserRole, Session, SetupLock): add your own
@@ -95,13 +95,43 @@ The first run therefore works without editing anything. It contains secrets: don
 
 | File | Endpoints |
 |---|---|
-| `server/routes/UsersRoute.ts` | `GET`/`POST /api/users`, `DELETE /api/users/:id` (admins and owners) |
 | `server/routes/NotificationRoute.ts` | `GET /api/notifications/handlers`, `POST /api/notifications/send` (admins and owners) |
 | `server/routes/StatusRoute.ts` | `GET /api/status` (public) |
 
-Change, remove or add routes there; add new ones to the list in `server/routes/index.ts`. The comments in `UsersRoute.ts` and `NotificationRoute.ts` list the security rules to keep. See [Routes](https://github.com/totoluto/toto-stack/tree/master/packages/stack#routes) for `BaseRoute` and the [API reference](https://github.com/totoluto/toto-stack/blob/master/docs/api.md) for the endpoints.
+User management (`GET`/`POST /api/users`, `DELETE /api/users/:id`) is built into `toto-stack`, alongside auth, account security and health. It is not copied into the app.
+
+Change, remove or add routes there; add new ones to the list in `server/routes/index.ts`. The comments in `NotificationRoute.ts` list the security rules to keep. See [Routes](https://github.com/totoluto/toto-stack/tree/master/packages/stack#routes) for `BaseRoute` and the [API reference](https://github.com/totoluto/toto-stack/blob/master/docs/api.md) for the endpoints.
 
 **Overrides.** `package.json` contains npm `overrides` that replace vulnerable driver versions pinned by `@prisma/adapter-mariadb`. Keep them until Prisma updates its pin.
+
+## Settings in the generated client
+
+Open **Settings** in the signed-in sidebar (`/admin/settings`). The responsive
+settings navigation supports direct links via `?section=account`, `security`,
+`users`, `notifications` and `service`.
+
+- **Account:** change your password, generate/copy/revoke your API key, and
+  revoke a known session ID. Keys are only held in component memory and can be
+  hidden immediately. Changing your password also revokes your key and signs
+  out your other sessions.
+- **Security:** enroll an authenticator using its QR code or manual key, verify
+  enrollment, or disable two-factor authentication with your password and a
+  current code. The API does not expose your current MFA status or a session
+  list; the UI explains these limits rather than inventing those values.
+- **Users** (admins and owners): list accounts, create users with configured
+  role names, and delete eligible accounts after confirmation. Only owners
+  can grant `owner` or `admin`; owner accounts and your own account cannot be
+  deleted here. The server remains authoritative for all permission checks.
+- **Notifications** (admins and owners): list configured handlers, explicitly
+  choose recipients, send a notification, and review per-handler results.
+  Configure handlers on the server; the UI does not edit server configuration.
+- **Service:** run an on-demand readiness check, including database status and
+  uptime. Degraded responses are shown as degraded, not as successful checks.
+
+The client retains the dark neutral and indigo palette, with grouped surfaces,
+keyboard focus indicators, immediate press feedback, responsive navigation,
+and reduced-motion/transparency and higher-contrast support. Setup, sign-in,
+MFA sign-in, CSRF handling and logout continue through the existing auth flow.
 
 ## Scripts in the generated app
 

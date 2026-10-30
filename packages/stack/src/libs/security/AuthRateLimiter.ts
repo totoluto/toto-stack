@@ -44,6 +44,8 @@ const RULES = {
     // Password re-confirmation costs a full hash, so every attempt counts (H9).
     reauthIp: {name: "password confirmation per IP", maxAttempts: 30, windowMs: 15 * MINUTE},
     reauthAccount: {name: "password confirmation per account", maxAttempts: 10, windowMs: 15 * MINUTE},
+    userCreationIp: {name: "user creation per IP", maxAttempts: 20, windowMs: 15 * MINUTE},
+    userCreationActor: {name: "user creation per actor", maxAttempts: 5, windowMs: 15 * MINUTE},
     csrfIp: {name: "CSRF token per IP", maxAttempts: 120, windowMs: MINUTE},
 } satisfies Record<string, Rule>;
 
@@ -137,11 +139,19 @@ export class AuthRateLimiter {
         return this.consumeTiers([[RULES.setupOtpIp, `setup-otp:ip:${ip}`]]);
     }
 
-    /** Password re-confirmation on /account/* (every attempt counts). */
+    /** Password re-confirmation across account and user management (every attempt counts). */
     public consumeReauth(ip: string, userId: number): Promise<RateLimitResult> {
         return this.consumeTiers([
             [RULES.reauthIp, `reauth:ip:${ip}`],
             [RULES.reauthAccount, `reauth:account:${userId}`],
+        ]);
+    }
+
+    /** Count creation attempts before either password hash, including successes and duplicate usernames. */
+    public consumeUserCreation(ip: string, actorId: number): Promise<RateLimitResult> {
+        return this.consumeTiers([
+            [RULES.userCreationIp, `user-creation:ip:${ip}`],
+            [RULES.userCreationActor, `user-creation:actor:${actorId}`],
         ]);
     }
 

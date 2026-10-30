@@ -13,8 +13,6 @@ import {
 } from "@server/libs/security/validation";
 import {rateLimitClientKey} from "@server/libs/security/clientIp";
 import {checkRateLimit, rejectBearer} from "@server/libs/security/routeGuards";
-import {PrismaUserType} from "@shared/types/user";
-import {Request, Response} from "express";
 
 /**
  * The signed-in user's own credentials. Every sensitive change requires the
@@ -134,26 +132,5 @@ export class AccountRoute extends BaseRoute {
 
             return respond(res, 200, "success", "Session revoked");
         });
-    }
-
-    /**
-     * Re-authenticates a sensitive operation with the current password
-     * (rate-limited: every attempt costs a password hash). Responds 429/403
-     * and returns null on failure.
-     */
-    private async requirePasswordConfirmed(req: Request, res: Response, password: string): Promise<PrismaUserType | null> {
-        const {id} = this.currentUser(req);
-        const limit = await this.dependencies.authRateLimiter.consumeReauth(rateLimitClientKey(req), id);
-        if (!checkRateLimit(res, limit, "password confirmations")) {
-            return null;
-        }
-
-        const user = await this.dependencies.userService.getById(id);
-        if (!user || !(await this.dependencies.userService.verifyPassword(user, password))) {
-            sendError(res, 403, "Password confirmation failed.", {code: ErrorCode.PASSWORD_CONFIRMATION_FAILED});
-            return null;
-        }
-
-        return user;
     }
 }

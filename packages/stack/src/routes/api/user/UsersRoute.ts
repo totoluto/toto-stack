@@ -1,9 +1,19 @@
-import {BaseRoute, canGrantRole, createUserSchema, ErrorCode, respond, Role, sendError, type Dependencies} from "toto-stack";
+import {BaseRoute} from "@server/routes/BaseRoute";
+import {canGrantRole, Role} from "@shared/roles";
+import {createUserSchema, deleteUserSchema} from "@server/libs/security/validation";
+import {ErrorCode} from "@shared/errorCodes";
+import {respond} from "@server/libs/utils/helpers";
+import {sendError} from "@server/libs/ErrorHandler";
+import type {Dependencies} from "@server/libs/Dependencies";
+import {checkRateLimit} from "@server/libs/security/routeGuards";
+import {rateLimitClientKey} from "@server/libs/security/clientIp";
 
 /**
  * /api/users: user management for admins and owners.
  *
  * Keep these rules when you change this route:
+ * - Mutations require the actor's current password, including with Bearer.
+ *   Creation is additionally throttled before either password hash.
  * - Only an owner may grant `owner` or `admin`; an admin may grant app roles.
  * - Deleting a user requires being allowed to grant every role it holds (an
  *   admin can't delete an admin). Owners are never deleted, and nobody
@@ -36,12 +46,16 @@ export class UsersRoute extends BaseRoute {
         });
 
         // The stack's password policy and the configured role names.
-        this.post("/", createUserSchema(this.dependencies.config.roles), async (req, res, {username, password, roles}) => {
+        this.post("/", createUserSchema(this.dependencies.config.roles), async (req, res, {username, password, currentPassword, roles}) => {
             const actor = this.currentUser(req);
             const forbidden = roles.filter(role => !canGrantRole(actor.roles, role));
             if (forbidden.length > 0) {
                 return sendError(res, 403, `You may not grant the role(s): ${forbidden.join(", ")}.`, {code: ErrorCode.ROLE_NOT_GRANTABLE});
             }
+
+            const limit = await this.dependencies.authRateLimiter.consumeUserCreation(rateLimitClientKey(req), actor.id);
+            if (!checkRateLimit(res, limit, "user creation attempts")) return;
+            if (!(await this.requirePasswordConfirmed(req, res, currentPassword))) return;
 
             const user = await userService.createUser(username, password, roles);
 
@@ -54,10 +68,13 @@ export class UsersRoute extends BaseRoute {
             });
         });
 
-        this.delete("/:id", async (req, res) => {
+        this.delete("/:id", deleteUserSchema, async (req, res, {currentPassword}) => {
             const actor = this.currentUser(req);
-            const userId = Number(req.params.id);
-            if (!Number.isInteger(userId) || userId < 1) {
+            const id = req.params.id;
+            const userId = Number(id);
+            // Prisma's Int is signed 32-bit. Reject coercible aliases (hex,
+            // exponent notation, whitespace) and overflow before querying it.
+            if (typeof id !== "string" || !/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(userId) || userId > 2_147_483_647) {
                 return sendError(res, 400, "Invalid user id.", {code: ErrorCode.INVALID_USER_ID});
             }
 
@@ -65,7 +82,7 @@ export class UsersRoute extends BaseRoute {
                 return sendError(res, 400, "You cannot delete your own account.", {code: ErrorCode.CANNOT_DELETE_SELF});
             }
 
-            const target = await userService.getById(userId);
+            const target = await userService.getSessionUser(userId);
             if (!target) {
                 return sendError(res, 404, "User not found.", {code: ErrorCode.USER_NOT_FOUND});
             }
@@ -78,6 +95,8 @@ export class UsersRoute extends BaseRoute {
             if (!targetRoles.every(role => canGrantRole(actor.roles, role))) {
                 return sendError(res, 403, "Only an owner can delete this user.", {code: ErrorCode.USER_PROTECTED});
             }
+
+            if (!(await this.requirePasswordConfirmed(req, res, currentPassword))) return;
 
             // False when the user was deleted concurrently.
             if (!(await userService.deleteUser(userId))) {

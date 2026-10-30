@@ -24,8 +24,8 @@ describeDb("users on MariaDB", () => {
         const {app, server} = await createRealServer(db.prisma(), config);
         const owner = agentFor(app);
         await completeSetup(owner, "owner", OWNER_PASSWORD);
-        const createUser = async (username: string, password: string, roles: string[] = [], as: Agent = owner) =>
-            postJson(as, "/api/users", {username, password, roles});
+        const createUser = async (username: string, password: string, roles: string[] = [], as: Agent = owner, currentPassword = OWNER_PASSWORD) =>
+            postJson(as, "/api/users", {username, password, roles, currentPassword});
         return {app, server, owner, createUser};
     }
 
@@ -35,7 +35,7 @@ describeDb("users on MariaDB", () => {
         const admin = await login(app, "admin", "admin-password-1");
 
         for (const roles of [["owner"], ["admin"]]) {
-            const res = await createUser(`x-${roles[0]}`, "some-password-123", roles, admin);
+            const res = await createUser(`x-${roles[0]}`, "some-password-123", roles, admin, "admin-password-1");
             expect(res.status).toBe(403);
             expect(res.body.code).toBe("ROLE_NOT_GRANTABLE");
         }
@@ -73,7 +73,7 @@ describeDb("users on MariaDB", () => {
         await login(app, "bob", BOB_PASSWORD);
         expect(await db.prisma().session.count({where: {userId: bobId}})).toBe(2);
 
-        expect((await del(owner, `/api/users/${bobId}`)).status).toBe(200);
+        expect((await del(owner, `/api/users/${bobId}`, {currentPassword: OWNER_PASSWORD})).status).toBe(200);
 
         expect(await db.prisma().session.count({where: {userId: bobId}})).toBe(0);
         expect((await laptop.get("/api/auth/me")).body.data.authState).toBe("login");

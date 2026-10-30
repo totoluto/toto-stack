@@ -68,7 +68,7 @@ export const ErrorCode = {
     /** 400: /account/mfa/verify without a (live) /account/mfa/start. */
     MFA_ENROLLMENT_NOT_STARTED: "MFA_ENROLLMENT_NOT_STARTED",
 
-    // Account (built in) and user management (the template's /api/users;
+    // Account and user management (built-in /api/account and /api/users;
     // USERNAME_TAKEN also comes from userService.createUser)
     /** 403: the current password given for a sensitive change is wrong. */
     PASSWORD_CONFIRMATION_FAILED: "PASSWORD_CONFIRMATION_FAILED",

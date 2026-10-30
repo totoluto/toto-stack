@@ -295,24 +295,27 @@ describe("frontend (M7)", () => {
 });
 
 describe("built-in routes (M10/M11)", () => {
-    it("are only the sign-in flow, /api/account and /api/health; everything else is app code", async () => {
+    it("include auth, account, users and health without the template's routes", async () => {
         // Without the template's routes (makeServer() adds them).
         const {createServer} = await import("toto-stack");
         const app = await createServer({prisma: fakePrisma, logger: {patchConsole: false}}).createApp();
 
-        for (const path of ["/api/users", "/api/notifications/handlers", "/api/status"]) {
+        for (const path of ["/api/notifications/handlers", "/api/status"]) {
             const res = await request(app).get(path);
             expect(res.status).toBe(404);
             expect(res.body.code).toBe("NOT_FOUND");
         }
 
         expect((await request(app).get("/api/health")).status).toBe(200);
+        const users = await request(app).get("/api/users");
+        expect(users.status).toBe(401);
+        expect(users.body.code).toBe("UNAUTHORIZED");
         expect((await request(app).get("/api/auth/me")).body.data.authState).toBe("setup");
         // Mounted: an invalid API key is a 401, not a 404.
         expect((await request(app).delete("/api/account/api-key").set("Authorization", "Bearer toto_invalid")).status).toBe(401);
     });
 
-    it("mounts app routes after the built-ins (the template's users, notifications and status)", async () => {
+    it("mounts app routes after the built-ins (the template's notifications and status)", async () => {
         const server = makeServer({notifications: {handlers: {ops: {send: async () => undefined}}}});
         const app = await server.createApp();
         const {userService} = server.dependencies;

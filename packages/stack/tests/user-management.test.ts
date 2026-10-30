@@ -5,6 +5,7 @@ import {UserAuthState} from "@shared/types/user";
 import {advanceClock, agentFor, createOwnerContext, del, postJson, totp} from "./helpers";
 import type {FakePrisma} from "./fakePrisma";
 
+const OWNER_PASSWORD = "owner-secret-password";
 const ADMIN_PASSWORD = "admin-secret-password";
 const MEMBER_PASSWORD = "member-secret-pass";
 
@@ -15,11 +16,11 @@ describe("user management", () => {
     let owner: Agent;
 
     beforeEach(async () => {
-        ({app, prisma, owner} = await createOwnerContext({}, "owner", "owner-secret-password"));
+        ({app, prisma, owner} = await createOwnerContext({}, "owner", OWNER_PASSWORD));
     });
 
     async function createUser(username: string, password: string, roles: string[] = []): Promise<number> {
-        const res = await postJson(owner, "/api/users", {username, password, roles});
+        const res = await postJson(owner, "/api/users", {currentPassword: OWNER_PASSWORD, username, password, roles});
         expect(res.status, JSON.stringify(res.body)).toBe(201);
         return res.body.data.user.id;
     }
@@ -38,7 +39,7 @@ describe("user management", () => {
     }
 
     it("lets an owner create users without handing out API keys", async () => {
-        const res = await postJson(owner, "/api/users", {username: "admin", password: ADMIN_PASSWORD, roles: ["admin"]});
+        const res = await postJson(owner, "/api/users", {currentPassword: OWNER_PASSWORD, username: "admin", password: ADMIN_PASSWORD, roles: ["admin"]});
 
         expect(res.status).toBe(201);
         expect(res.body.data.user.roles).toContain("admin");
@@ -48,20 +49,20 @@ describe("user management", () => {
         const key = await issueKey(await login("admin", ADMIN_PASSWORD), ADMIN_PASSWORD);
         expect(key).toMatch(/^toto_/);
 
-        const memberRes = await postJson(owner, "/api/users", {username: "member", password: MEMBER_PASSWORD, roles: []});
+        const memberRes = await postJson(owner, "/api/users", {currentPassword: OWNER_PASSWORD, username: "member", password: MEMBER_PASSWORD, roles: []});
         expect(memberRes.status).toBe(201);
     });
 
     it("rejects duplicate usernames", async () => {
         await createUser("admin", ADMIN_PASSWORD, ["admin"]);
-        const res = await postJson(owner, "/api/users", {username: "admin", password: "another-password", roles: []});
+        const res = await postJson(owner, "/api/users", {currentPassword: OWNER_PASSWORD, username: "admin", password: "another-password", roles: []});
 
         expect(res.status).toBe(409);
     });
 
     it("treats usernames that differ only in case as duplicates (utf8mb4_unicode_ci)", async () => {
         await createUser("alice", MEMBER_PASSWORD);
-        const res = await postJson(owner, "/api/users", {username: "ALICE", password: "another-password", roles: []});
+        const res = await postJson(owner, "/api/users", {currentPassword: OWNER_PASSWORD, username: "ALICE", password: "another-password", roles: []});
 
         expect(res.status).toBe(409);
         expect(res.body.code).toBe("USERNAME_TAKEN");
@@ -169,13 +170,13 @@ describe("user management", () => {
         const users = await owner.get("/api/users");
         const ownerId = users.body.data.users.find((user: {username: string}) => user.username === "owner").id;
 
-        const self = await del(owner, `/api/users/${ownerId}`);
+        const self = await del(owner, `/api/users/${ownerId}`, {currentPassword: OWNER_PASSWORD});
         expect(self.status).toBe(400);
 
-        const missing = await del(owner, "/api/users/9999");
+        const missing = await del(owner, "/api/users/9999", {currentPassword: OWNER_PASSWORD});
         expect(missing.status).toBe(404);
 
-        const deleted = await del(owner, `/api/users/${memberId}`);
+        const deleted = await del(owner, `/api/users/${memberId}`, {currentPassword: OWNER_PASSWORD});
         expect(deleted.status).toBe(200);
     });
 });

@@ -128,7 +128,7 @@ export class UserService {
         return this.prisma.user.findFirst({where: {id: userID}, include: INCLUDE_ROLES});
     }
 
-    /** Id, username and role names only (no credential columns), for authenticating a session. */
+    /** Id, username and role names only (no credential columns), for authentication and authorization checks. */
     public async getSessionUser(userID: number): Promise<StackSessionUser | null> {
         return this.prisma.user.findUnique({where: {id: userID}, select: SESSION_USER_SELECT});
     }

@@ -23,11 +23,15 @@ Every release has notes in the package changelogs (`packages/stack/CHANGELOG.md`
 
 | Part of your app | Where it comes from | How it updates |
 |---|---|---|
-| Server framework: auth, sessions, CSRF, rate limits, the built-in routes (`/api/auth`, `/api/account`, `/api/health`), `toto-stack/client` (`apiFetch`, `UserProvider`, `NavLinkRole`) | the `toto-stack` package | Version bump, as above |
+| Server framework: auth, sessions, CSRF, rate limits, the built-in routes (`/api/auth`, `/api/account`, `/api/users`, `/api/health`), `toto-stack/client` (`apiFetch`, `UserProvider`, `NavLinkRole`) | the `toto-stack` package | Version bump, as above |
 | Prisma models (`User`, `Role`, `UserRole`, `Session`, `SetupLock`) | **copied** into your `schema.prisma` | Manually; see [Schema changes](#schema-changes) |
-| Client UI (login, MFA and setup screens, layout, styles), `server/index.ts`, the app's routes in `server/routes` (`/api/users`, `/api/notifications`, `/api/status`), Dockerfile, compose files, `sample.env`, scripts | **copied** once by `create-toto-app` | Not automatically; port the changes you want |
+| Client UI (login, MFA and setup screens, layout, styles), `server/index.ts`, the app's routes in `server/routes` (`/api/notifications`, `/api/status`), Dockerfile, compose files, `sample.env`, scripts | **copied** once by `create-toto-app` | Not automatically; port the changes you want |
 
 To see what changed in the template between two releases, diff `packages/create-toto-app/template` between the two release tags (`create-toto-app@<version>`), e.g. `git diff create-toto-app@0.1.0 create-toto-app@0.2.0 -- packages/create-toto-app/template`. Alternatively, scaffold a throwaway app with the new version (`npm create toto-app@<version> tmp-app`) and compare it with yours.
+
+## User management is now built in
+
+`/api/users` is maintained by `toto-stack` and mounted before app routes. Existing apps should remove the `UsersRoute` import and registration from `server/routes/index.ts`, then remove the copied `server/routes/UsersRoute.ts`. No Prisma migration is needed. If you customized that route, review the changes: a copied route at the same path no longer overrides the core endpoints. Put app-specific extensions on distinct paths rather than relying on the old template route.
 
 ## Upgrade checklist (minor versions)
 

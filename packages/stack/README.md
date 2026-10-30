@@ -196,9 +196,10 @@ On first start with an empty database, the server prints a one-time **setup toke
 Built-in endpoints, the ones the sign-in flow and its security guarantees depend on:
 - `/api/auth/*`: setup, login, MFA, logout, current user, CSRF token.
 - `/api/account/*`: password, MFA and API key of the signed-in user.
+- `/api/users`: user management for admins and owners, with actor-password confirmation for creation and deletion.
 - `/api/health`: readiness, including the database (mounted before the session middleware).
 
-Everything else is app code you pass in `routes`. An app scaffolded by `create-toto-app` starts with three route files in `server/routes` that it owns and can change or remove: `/api/users` (user management for admins), `/api/notifications/*` and `/api/status`. See [Routes in a scaffolded app](#routes-in-a-scaffolded-app).
+Everything else is app code you pass in `routes`. An app scaffolded by `create-toto-app` starts with two route files in `server/routes` that it owns and can change or remove: `/api/notifications/*` and `/api/status`. See [Routes in a scaffolded app](#routes-in-a-scaffolded-app).
 
 Every endpoint is documented in the [API reference](https://github.com/totoluto/toto-stack/blob/master/docs/api.md).
 
@@ -354,16 +355,22 @@ Register it with `createServer({prisma, routes: [TodoRoute]})`.
   - `respond(res, status, "success" | "error", message, data?)` and `sendError(res, status, message, {code?, details?})` write the standard [envelope](#errors).
   - `getRequestIP(req)` returns the validated client IP (honouring `TRUST_PROXY`, with IPv4-mapped IPv6 unwrapped), or `undefined`. Never parse `X-Forwarded-For` yourself.
 - **CSRF:** state-changing requests (anything but GET/HEAD/OPTIONS) to any `/api` route, yours included, need an `X-CSRF-Token` header unless they authenticate with `Authorization: Bearer`. `apiFetch` handles this in the browser.
-- **Route order:** the built-in routes (`/api/auth`, `/api/account`, `/api/health`) are mounted before yours, so don't reuse their paths.
+- **Route order:** the built-in routes (`/api/auth`, `/api/account`, `/api/users`, `/api/health`) are mounted before yours, so don't reuse their paths.
 - **Unknown paths:** unknown `/api` paths return a JSON 404.
 
 ### Routes in a scaffolded app
 
-The stack only mounts the routes the sign-in flow and account security depend on. A `create-toto-app` app keeps its own routes in `server/routes` and registers them in `server/index.ts`:
+The stack always mounts auth, account security, user management and health. `GET`/`POST /api/users` and `DELETE /api/users/:id` are core APIs restricted to admins and owners, with protected owner accounts and no credential fields in responses. See the [API reference](../../docs/api.md#users-apiusers).
+
+Both user mutations require `currentPassword` (the authenticated actor's existing password, a string of 1–256 characters), whether authenticated by cookie session or Bearer API key; there is no key-only mutation exception. `POST /api/users` takes `{username, password, currentPassword, roles?}`, with the new user's `password` limited to 10–256 characters. `DELETE /api/users/:id` takes strict JSON `{currentPassword}`. Missing or invalid actor passwords give **400 `VALIDATION_FAILED`**; wrong actor passwords give **403 `PASSWORD_CONFIRMATION_FAILED`**.
+
+Password-confirmation attempts share **10 per actor/account and 30 per IP per 15 minutes** across the account and users endpoints; every attempt counts, successful or not. Creation also has a separate limit of **5 attempts per actor and 20 per IP per 15 minutes**, counting every schema-valid, role-authorized attempt, including duplicates and wrong actor passwords. The creation limit is checked before actor-password verification or hashing the new user's password. Exceeding either budget gives **429 `RATE_LIMITED`** with `Retry-After` (seconds). Global limits, role protections and CSRF rules are unchanged: cookie-session mutations need `X-CSRF-Token`, while Bearer requests remain CSRF-exempt but still require password confirmation.
+
+A `create-toto-app` app keeps its additional routes in `server/routes` and registers them in `server/index.ts`:
 
 ```ts
 // server/routes/index.ts
-export const routes: RouteClass[] = [StatusRoute, UsersRoute, NotificationRoute];
+export const routes: RouteClass[] = [StatusRoute, NotificationRoute];
 
 // server/index.ts
 createServer({prisma, routes, /* ... */});
@@ -372,10 +379,9 @@ createServer({prisma, routes, /* ... */});
 | File | Endpoints | Notes |
 |---|---|---|
 | `StatusRoute.ts` | `GET /api/status` | Public liveness check; an example of `{auth: false}`. |
-| `UsersRoute.ts` | `GET /api/users`, `POST /api/users`, `DELETE /api/users/:id` | Admin. Uses `userService`, `createUserSchema` (the stack's password policy and the configured roles) and `canGrantRole`. |
 | `NotificationRoute.ts` | `GET /api/notifications/handlers`, `POST /api/notifications/send` | Admin. Uses `notificationService` and `sendNotificationSchema`. |
 
-The files are yours: change them, delete them, or add routes next to them. The doc comments in `UsersRoute.ts` and `NotificationRoute.ts` list the security rules to keep if you change them (who may grant and delete what, no secrets in responses, no remote error text). Everything they use is public API: `BaseRoute`, `respond`, `sendError`, `ErrorCode`, `Role`, `canGrantRole`, the schemas and the services on `this.dependencies`.
+The files are yours: change them, delete them, or add routes next to them. The doc comment in `NotificationRoute.ts` lists the security rules to keep if you change it (no remote error text in responses). Everything they use is public API: `BaseRoute`, `respond`, `sendError`, `ErrorCode`, `Role`, the schemas and the services on `this.dependencies`. User management is maintained in `toto-stack`, not copied into your app.
 
 ## Custom services
 
@@ -444,12 +450,12 @@ createServer({prisma, roles: [AppRole.EDITOR, AppRole.VIEWER]});
 - `roles: []` (or omitted) means "any signed-in user", on routes, in `hasAnyRole` and in `NavLinkRole`.
 - `{roles: [AppRole.EDITOR, AppRole.VIEWER]}` admits editors, viewers, admins and owners.
 
-**Who can grant roles** (`canGrantRole`, enforced by the scaffolded app's `POST /api/users`; enforce it in any route of yours that assigns roles):
+**Who can grant roles** (`canGrantRole`, enforced by the built-in `POST /api/users`; enforce it in any route of yours that assigns roles):
 - Only an owner may grant `owner` or `admin`.
 - An admin may grant app roles.
 - Other users can't create users.
 
-In the scaffolded app's `/api/users`, deleting a user requires being allowed to grant every role it holds, so admins can't delete admins. Owners can't be deleted through the API, and nobody can delete their own account there.
+In the built-in `/api/users`, deleting a user requires being allowed to grant every role it holds, so admins can't delete admins. Owners can't be deleted through the API, and nobody can delete their own account there.
 
 **Sync is add-only.** At boot, configured roles missing from the database are created. Roles in the database that are no longer configured are kept (and logged at debug level), so removing a role from the config never deletes data. The first owner is created by the setup flow.
 

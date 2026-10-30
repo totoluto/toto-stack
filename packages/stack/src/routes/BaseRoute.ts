@@ -1,11 +1,13 @@
 import {NextFunction, Request, RequestHandler, Response, Router} from "express";
 import type {z} from "zod";
 import {hasAnyRole, Role} from "@shared/roles";
-import {SessionUserType} from "@shared/types/user";
+import {PrismaUserType, SessionUserType} from "@shared/types/user";
 import {Dependencies} from "@server/libs/Dependencies";
 import {AuthService} from "@server/libs/security/AuthService";
 import {AppError, sendError} from "@server/libs/ErrorHandler";
 import {ErrorCode} from "@shared/errorCodes";
+import {rateLimitClientKey} from "@server/libs/security/clientIp";
+import {checkRateLimit} from "@server/libs/security/routeGuards";
 
 export type RouteOptions = {
     /** Require an authenticated user (session or Bearer API key). Default: true. */
@@ -70,12 +72,33 @@ export abstract class BaseRoute {
         return req.user;
     }
 
+    /** Confirms the actor's current password; account and admin operations share the same rate-limit budget. */
+    protected async requirePasswordConfirmed(req: Request, res: Response, password: string): Promise<PrismaUserType | null> {
+        const {id} = this.currentUser(req);
+        const limit = await this.dependencies.authRateLimiter.consumeReauth(rateLimitClientKey(req), id);
+        if (!checkRateLimit(res, limit, "password confirmations")) return null;
+
+        const user = await this.dependencies.userService.getById(id);
+        if (!user || !(await this.dependencies.userService.verifyPassword(user, password))) {
+            sendError(res, 403, "Password confirmation failed.", {code: ErrorCode.PASSWORD_CONFIRMATION_FAILED});
+            return null;
+        }
+
+        return user;
+    }
+
     protected get(path: string, handler: RouteHandler, options?: RouteOptions): void {
         this.router.get(path, ...this.guards(options), wrap(handler));
     }
 
-    protected delete(path: string, handler: RouteHandler, options?: RouteOptions): void {
-        this.router.delete(path, ...this.guards(options), wrap(handler));
+    protected delete(path: string, handler: RouteHandler, options?: RouteOptions): void;
+    protected delete<TBody>(path: string, bodySchema: z.ZodType<TBody>, handler: BodyRouteHandler<TBody>, options?: RouteOptions): void;
+    protected delete<TBody>(path: string, schemaOrHandler: z.ZodType<TBody> | RouteHandler, handlerOrOptions?: BodyRouteHandler<TBody> | RouteOptions, options?: RouteOptions): void {
+        if (typeof schemaOrHandler === "function") {
+            this.router.delete(path, ...this.guards(handlerOrOptions as RouteOptions | undefined), wrap(schemaOrHandler));
+        } else {
+            this.router.delete(path, ...this.guards(options), withBody(schemaOrHandler, handlerOrOptions as BodyRouteHandler<TBody>));
+        }
     }
 
     /** POST with a zod-validated body (400 with `details` when invalid). */

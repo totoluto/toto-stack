@@ -3,28 +3,34 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    flex: 1;
     height: 100%;
     width: 100%;
     color: var(--text-primary);
     gap: 20px;
 }
 
+.outlet-content > .loading-screen {
+    min-height: 12rem;
+}
+
 .loading-screen .logo {
-    width: 96px;
+    width: 4rem;
     height: auto;
 }
 
 .loading-screen .message {
-    font-size: 14px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    opacity: 0.8;
+    font-size: 0.875rem;
+    letter-spacing: 0.01em;
+    color: var(--text-secondary);
 }
 
 .loading-screen .loader-body {
     --uib-size: 35px;
     --uib-speed: 0.8s;
-    --uib-color: var(--primary);
+    --uib-color: var(--primary-ink);
 
     position: relative;
     display: inline-block;

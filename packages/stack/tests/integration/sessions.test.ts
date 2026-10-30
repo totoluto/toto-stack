@@ -13,7 +13,7 @@ async function serverWithBob(prisma: RealPrisma, config = {}) {
     const {app, server} = await createRealServer(prisma, config);
     const owner = agentFor(app);
     await completeSetup(owner, "owner", OWNER_PASSWORD);
-    expect((await postJson(owner, "/api/users", {username: "bob", password: BOB_PASSWORD, roles: []})).status).toBe(201);
+    expect((await postJson(owner, "/api/users", {username: "bob", password: BOB_PASSWORD, roles: [], currentPassword: OWNER_PASSWORD})).status).toBe(201);
     return {app, server, cookieName: server.config.session.cookieName};
 }
 

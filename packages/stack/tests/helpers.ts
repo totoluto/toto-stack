@@ -60,10 +60,11 @@ export async function postJson(agent: Agent, url: string, body?: object) {
     return agent.post(url).set("X-CSRF-Token", token).send(body ?? {});
 }
 
-// DELETEs with a freshly fetched CSRF token.
-export async function del(agent: Agent, url: string) {
+// DELETEs optional JSON with a freshly fetched CSRF token.
+export async function del(agent: Agent, url: string, body?: object) {
     const token = await csrf(agent);
-    return agent.delete(url).set("X-CSRF-Token", token);
+    const req = agent.delete(url).set("X-CSRF-Token", token);
+    return body === undefined ? req : req.send(body);
 }
 
 /**

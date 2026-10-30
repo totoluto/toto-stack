@@ -80,7 +80,7 @@ export async function countedServer(config: Omit<StackConfig, "prisma"> = {}) {
 export async function withLoggedInUser(app: Express, password = "user-password-123"): Promise<{owner: Agent; user: Agent}> {
     const owner = agentFor(app);
     await completeSetup(owner, "owner", "owner-password-123");
-    const created = await postJson(owner, "/api/users", {username: "user", password, roles: []});
+    const created = await postJson(owner, "/api/users", {username: "user", password, roles: [], currentPassword: "owner-password-123"});
     if (created.status !== 201) throw new Error(`create user failed: ${created.status}`);
 
     const user = agentFor(app);

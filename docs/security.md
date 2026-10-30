@@ -260,7 +260,7 @@ State-changing requests (`POST`, `PUT`, `PATCH`, `DELETE`) under `/api` need an 
   - `admin` satisfies everything except `owner`-only requirements.
   - Other roles satisfy only themselves.
   - An empty role list means any signed-in user.
-- **Granting** (`canGrantRole`; the user management endpoints are the scaffolded app's `server/routes/UsersRoute.ts`, which enforces these rules, and an app that changes that route must keep them):
+- **Granting** (`canGrantRole`; enforced by the built-in `/api/users` endpoints):
   - Only owners may grant `owner` or `admin`; admins may grant app roles.
   - Deleting a user requires being able to grant all of its roles, so admins can't delete admins.
   - Owners can't be deleted through the API, and users can't delete themselves there.

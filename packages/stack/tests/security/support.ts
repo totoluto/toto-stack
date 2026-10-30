@@ -29,8 +29,8 @@ export async function serverWithOwner(config: Omit<StackConfig, "prisma"> = {}, 
 }
 
 /** Creates a user through the API (as `creator`) and returns its id. */
-export async function createUserVia(creator: ReturnType<typeof agentFor>, username: string, password: string, roles: string[] = []): Promise<number> {
-    const res = await postJson(creator, "/api/users", {username, password, roles});
+export async function createUserVia(creator: ReturnType<typeof agentFor>, username: string, password: string, roles: string[] = [], currentPassword = "owner-password-123"): Promise<number> {
+    const res = await postJson(creator, "/api/users", {username, password, roles, currentPassword});
     if (res.status !== 201) {
         throw new Error(`create ${username} failed: ${res.status} ${JSON.stringify(res.body)}`);
     }
