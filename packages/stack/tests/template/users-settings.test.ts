@@ -41,10 +41,44 @@ beforeEach(clearCsrfToken);
 afterEach(cleanup);
 
 describe("Users settings", () => {
+    it("requires the actor password for creation and clears both secrets at submission", async () => {
+        let release!: () => void;
+        const held = new Promise<void>(resolve => { release = resolve; });
+        const fetch = mockApi(async (url, init) => {
+            if (init.method === "POST") {
+                await held;
+                return envelope({user: {id: 5}}, 201);
+            }
+            return envelope({users});
+        });
+        mount();
+        await screen.findByRole("table", {name: "Users"});
+        const confirmation = screen.getByLabelText("Your current password") as HTMLInputElement;
+        expect(confirmation.type).toBe("password");
+        expect(confirmation.autocomplete).toBe("current-password");
+        expect(confirmation.maxLength).toBe(256);
+        expect(confirmation.required).toBe(true);
+        fireEvent.change(screen.getByLabelText("Username"), {target: {value: "new-user"}});
+        fireEvent.change(screen.getByLabelText("Password"), {target: {value: "new-password-123"}});
+        fireEvent.submit(screen.getByRole("form", {name: "Create user"}));
+        expect(fetch.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
+        fireEvent.change(confirmation, {target: {value: "actor-password-123"}});
+        fireEvent.submit(screen.getByRole("form", {name: "Create user"}));
+        expect(confirmation.value).toBe("");
+        expect((screen.getByLabelText("Password") as HTMLInputElement).value).toBe("");
+        await waitFor(() => expect(fetch.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1));
+        const post = fetch.mock.calls.find(([, init]) => init?.method === "POST")!;
+        expect(JSON.parse(String(post[1]?.body))).toEqual({username: "new-user", password: "new-password-123", roles: [], currentPassword: "actor-password-123"});
+        release();
+        await screen.findByText("User created.");
+        expect(confirmation.value).toBe("");
+    });
     it.each([
         {status: 400, code: "VALIDATION_FAILED", message: "Invalid request", details: [{path: "roles.0", message: "Unknown role"}], expected: "roles.0: Unknown role", roles: "unknown-role"},
         {status: 409, code: "USERNAME_TAKEN", message: "Username already taken.", expected: "Username already taken.", roles: ""},
         {status: 403, code: "ROLE_NOT_GRANTABLE", message: "You may not grant this role.", expected: "You may not grant this role.", roles: "editor"},
+        {status: 403, code: "PASSWORD_CONFIRMATION_FAILED", message: "Current password is incorrect.", expected: "Current password is incorrect.", roles: ""},
+        {status: 429, code: "RATE_LIMITED", message: "Too many requests. Try again later.", expected: "Too many requests. Try again later.", roles: ""},
     ])("surfaces $code from the server, clears passwords and permits corrected retries", async ({status, code, message, details, expected, roles}) => {
         let posts = 0;
         const fetch = mockApi((url, init) => init.method === "POST" ? (++posts === 1
@@ -54,34 +88,49 @@ describe("Users settings", () => {
         await screen.findByRole("table", {name: "Users"});
         fireEvent.change(screen.getByLabelText("Username"), {target: {value: "new-user"}});
         fireEvent.change(screen.getByLabelText("Password"), {target: {value: "new-password-123"}});
+        fireEvent.change(within(screen.getByRole("form", {name: "Create user"})).getByLabelText("Your current password"), {target: {value: "actor-password-123"}});
         fireEvent.change(screen.getByLabelText("Roles"), {target: {value: roles}});
         fireEvent.submit(screen.getByRole("form", {name: "Create user"}));
         expect((await screen.findByRole("alert")).textContent).toBe(expected);
         expect((screen.getByLabelText("Password") as HTMLInputElement).value).toBe("");
+        expect((screen.getByLabelText("Your current password") as HTMLInputElement).value).toBe("");
         expect((screen.getByLabelText("Username") as HTMLInputElement).value).toBe("new-user");
         const post = fetch.mock.calls.find(([, init]) => init?.method === "POST")!;
-        expect(JSON.parse(String(post[1]?.body)).roles).toEqual(roles ? [roles] : []);
+        expect(JSON.parse(String(post[1]?.body))).toEqual({username: "new-user", password: "new-password-123", roles: roles ? [roles] : [], currentPassword: "actor-password-123"});
         expect(screen.queryByText("User created.")).toBeNull();
         fireEvent.change(screen.getByLabelText("Roles"), {target: {value: ""}});
         fireEvent.change(screen.getByLabelText("Password"), {target: {value: "retry-password-123"}});
+        fireEvent.change(screen.getByLabelText("Your current password"), {target: {value: "retry-actor-password"}});
         fireEvent.submit(screen.getByRole("form", {name: "Create user"}));
         await screen.findByText("User created.");
         expect(screen.queryByRole("alert")).toBeNull();
         expect(posts).toBe(2);
+        expect((screen.getByLabelText("Password") as HTMLInputElement).value).toBe("");
+        expect((screen.getByLabelText("Your current password") as HTMLInputElement).value).toBe("");
+        const retry = fetch.mock.calls.filter(([, init]) => init?.method === "POST")[1];
+        expect(JSON.parse(String(retry[1]?.body))).toEqual({username: "new-user", password: "retry-password-123", roles: [], currentPassword: "retry-actor-password"});
     });
 
     it.each([
         [403, "USER_PROTECTED", "Owner accounts cannot be deleted."],
         [404, "USER_NOT_FOUND", "User not found."],
+        [403, "PASSWORD_CONFIRMATION_FAILED", "Current password is incorrect."],
+        [429, "RATE_LIMITED", "Too many requests. Try again later."],
     ])("shows a server delete rejection (%s) without removing the user or claiming success", async (status, code, message) => {
-        mockApi((url, init) => init.method === "DELETE" ? envelope(undefined, status, message, code) : undefined);
+        const fetch = mockApi((url, init) => init.method === "DELETE" ? envelope(undefined, status, message, code) : undefined);
         mount();
         await screen.findByRole("table", {name: "Users"});
         fireEvent.click(row("app-user").getByRole("button", {name: "Delete app-user"}));
+        fireEvent.change(row("app-user").getByLabelText("Your current password"), {target: {value: "actor-password-123"}});
         fireEvent.click(row("app-user").getByRole("button", {name: "Confirm delete app-user"}));
         expect((await screen.findByRole("alert")).textContent).toBe(message);
         expect(screen.getByRole("row", {name: /app-user/})).toBeTruthy();
         expect(screen.queryByText("User deleted.")).toBeNull();
+        expect((row("app-user").getByLabelText("Your current password") as HTMLInputElement).value).toBe("");
+        expect(disabled(row("app-user").getByRole("button", {name: "Confirm delete app-user"}))).toBe(true);
+        const request = fetch.mock.calls.find(([, init]) => init?.method === "DELETE")!;
+        expect(JSON.parse(String(request[1]?.body))).toEqual({currentPassword: "actor-password-123"});
+        fireEvent.change(row("app-user").getByLabelText("Your current password"), {target: {value: "retry-actor-password"}});
         expect(disabled(row("app-user").getByRole("button", {name: "Confirm delete app-user"}))).toBe(false);
     });
 
@@ -96,6 +145,7 @@ describe("Users settings", () => {
         await screen.findByRole("table", {name: "Users"});
         fireEvent.change(screen.getByLabelText("Username"), {target: {value: "new-user"}});
         fireEvent.change(screen.getByLabelText("Password"), {target: {value: "new-password-123"}});
+        fireEvent.change(within(screen.getByRole("form", {name: "Create user"})).getByLabelText("Your current password"), {target: {value: "actor-password-123"}});
         fireEvent.submit(screen.getByRole("form", {name: "Create user"}));
         expect((await screen.findByRole("alert")).textContent).toContain("permission");
         expect(screen.getByText("User created.")).toBeTruthy();
@@ -128,13 +178,25 @@ describe("Users settings", () => {
         fireEvent.click(row("app-user").getByRole("button", {name: "Delete app-user"}));
         expect(row("app-user").getByText("Delete app-user? This also signs them out of all sessions.")).toBeTruthy();
         expect(fetch.mock.calls.some(([, init]) => init?.method === "DELETE")).toBe(false);
+        const confirmation = row("app-user").getByLabelText("Your current password") as HTMLInputElement;
+        expect(confirmation.type).toBe("password");
+        expect(confirmation.autocomplete).toBe("current-password");
+        expect(confirmation.maxLength).toBe(256);
+        expect(disabled(row("app-user").getByRole("button", {name: "Confirm delete app-user"}))).toBe(true);
+        fireEvent.click(row("app-user").getByRole("button", {name: "Confirm delete app-user"}));
+        expect(fetch.mock.calls.some(([, init]) => init?.method === "DELETE")).toBe(false);
+        fireEvent.change(confirmation, {target: {value: "cancelled-password"}});
         fireEvent.click(row("app-user").getByRole("button", {name: "Cancel"}));
         expect(screen.queryByRole("button", {name: "Confirm delete app-user"})).toBeNull();
         fireEvent.click(row("app-user").getByRole("button", {name: "Delete app-user"}));
+        expect((row("app-user").getByLabelText("Your current password") as HTMLInputElement).value).toBe("");
+        fireEvent.change(row("app-user").getByLabelText("Your current password"), {target: {value: "actor-password-123"}});
         fireEvent.click(row("app-user").getByRole("button", {name: "Confirm delete app-user"}));
+        expect((row("app-user").getByLabelText("Your current password") as HTMLInputElement).value).toBe("");
         await waitFor(() => expect(fetch.mock.calls.filter(([, init]) => init?.method === "DELETE")).toHaveLength(1));
         const request = fetch.mock.calls.find(([, init]) => init?.method === "DELETE")!;
         expect(String(request[0])).toBe("/api/users/4");
+        expect(JSON.parse(String(request[1]?.body))).toEqual({currentPassword: "actor-password-123"});
         expect(disabled(screen.getByRole("button", {name: "Deleting…"}))).toBe(true);
         expect(disabled(screen.getByRole("button", {name: "Create user"}))).toBe(true);
         release();
@@ -143,17 +205,32 @@ describe("Users settings", () => {
         expect(fetch.mock.calls.filter(([url, init]) => String(url) === "/api/users" && (!init?.method || init.method === "GET"))).toHaveLength(2);
         expect(screen.getByText("User deleted.")).toBeTruthy();
     });
+    it("clears deletion confirmation when changing target without affecting creation confirmation", async () => {
+        mockApi();
+        mount(["owner"], 1);
+        await screen.findByRole("table", {name: "Users"});
+        fireEvent.change(screen.getByLabelText("Your current password"), {target: {value: "create-password"}});
+        fireEvent.click(row("app-user").getByRole("button", {name: "Delete app-user"}));
+        fireEvent.change(row("app-user").getByLabelText("Your current password"), {target: {value: "delete-password"}});
+        fireEvent.click(row("other-admin").getByRole("button", {name: "Delete other-admin"}));
+        expect((row("other-admin").getByLabelText("Your current password") as HTMLInputElement).value).toBe("");
+        fireEvent.click(row("app-user").getByRole("button", {name: "Delete app-user"}));
+        expect((row("app-user").getByLabelText("Your current password") as HTMLInputElement).value).toBe("");
+        expect((within(screen.getByRole("form", {name: "Create user"})).getByLabelText("Your current password") as HTMLInputElement).value).toBe("create-password");
+    });
     it.each(["admin", "owner"])("prevents an admin granting %s even if typed as a role", async role => {
         const fetch = mockApi();
         mount();
         await screen.findByRole("table", {name: "Users"});
         fireEvent.change(screen.getByLabelText("Username"), {target: {value: "new-user"}});
         fireEvent.change(screen.getByLabelText("Password"), {target: {value: "new-password-123"}});
+        fireEvent.change(within(screen.getByRole("form", {name: "Create user"})).getByLabelText("Your current password"), {target: {value: "actor-password-123"}});
         fireEvent.change(screen.getByLabelText("Roles"), {target: {value: role}});
         fireEvent.submit(screen.getByRole("form", {name: "Create user"}));
         expect((await screen.findByRole("alert")).textContent).toContain("Only owners can grant owner or admin");
         expect(fetch.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
         expect((screen.getByLabelText("Password") as HTMLInputElement).value).toBe("");
+        expect((screen.getByLabelText("Your current password") as HTMLInputElement).value).toBe("");
     });
     it("creates an owner-selected account, clears its password, blocks duplicate submissions and refreshes users", async () => {
         let release!: () => void;
@@ -173,6 +250,7 @@ describe("Users settings", () => {
         expect(disabled(row("other-admin").getByRole("button", {name: "Delete other-admin"}))).toBe(false);
         fireEvent.change(screen.getByLabelText("Username"), {target: {value: " new-user "}});
         fireEvent.change(screen.getByLabelText("Password"), {target: {value: "new-password-123"}});
+        fireEvent.change(within(screen.getByRole("form", {name: "Create user"})).getByLabelText("Your current password"), {target: {value: "actor-password-123"}});
         fireEvent.change(screen.getByLabelText("Roles"), {target: {value: "owner, admin, custom-role"}});
         const form = screen.getByRole("form", {name: "Create user"});
         fireEvent.submit(form);
@@ -180,8 +258,9 @@ describe("Users settings", () => {
         await waitFor(() => expect(fetch.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1));
         expect(disabled(screen.getByRole("button", {name: "Creating user…"}))).toBe(true);
         expect((screen.getByLabelText("Password") as HTMLInputElement).value).toBe("");
+        expect((screen.getByLabelText("Your current password") as HTMLInputElement).value).toBe("");
         const post = fetch.mock.calls.find(([, init]) => init?.method === "POST")!;
-        expect(JSON.parse(String(post[1]?.body))).toEqual({username: "new-user", password: "new-password-123", roles: ["owner", "admin", "custom-role"]});
+        expect(JSON.parse(String(post[1]?.body))).toEqual({username: "new-user", password: "new-password-123", roles: ["owner", "admin", "custom-role"], currentPassword: "actor-password-123"});
         expect(new Headers(post[1]?.headers).get("X-CSRF-Token")).toBe("token");
         release();
         await screen.findByRole("row", {name: /new-user/});

@@ -49,6 +49,9 @@ export const passwordConfirmSchema = z.object({
 
 export type PasswordConfirmPayload = z.infer<typeof passwordConfirmSchema>;
 
+/** Actor confirmation for administrative deletion (never the target's password). */
+export const deleteUserSchema = z.object({currentPassword: passwordField}).strict();
+
 export const revokeSessionSchema = z.object({
     password: passwordField,
     sessionID: z.string().min(1, "Session ID is required"),
@@ -66,7 +69,8 @@ export type MfaDisablePayload = z.infer<typeof mfaDisableSchema>;
 /**
  * Body of a "create user" request (the built-in POST /api/users): a
  * username, a password following the stack's password policy and optional
- * roles, which must be configured role names (duplicates are removed).
+ * roles, which must be configured role names (duplicates are removed), plus
+ * the actor's currentPassword for re-authentication.
  * Whether the caller may grant those roles is checked separately (canGrantRole).
  */
 export function createUserSchema(configuredRoles: readonly Role[]) {
@@ -75,6 +79,7 @@ export function createUserSchema(configuredRoles: readonly Role[]) {
     return z.object({
         username: usernameField,
         password: newPasswordField,
+        currentPassword: passwordField,
         roles: z.array(z.string().refine(role => known.has(role), {message: "Unknown role"}))
             .max(64)
             .default([])

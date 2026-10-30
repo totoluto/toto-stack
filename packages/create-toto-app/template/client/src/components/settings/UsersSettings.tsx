@@ -19,9 +19,11 @@ export function UsersSettings() {
     const [revision, setRevision] = useState(0);
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [currentPassword, setCurrentPassword] = useState("");
     const [roleNames, setRoleNames] = useState("");
     const [success, setSuccess] = useState<string | null>(null);
     const [confirmId, setConfirmId] = useState<number | null>(null);
+    const [deletePassword, setDeletePassword] = useState("");
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const {loading: pending, error, run} = useSubmit();
 
@@ -33,12 +35,14 @@ export function UsersSettings() {
     }
 
     function deleteUser(target: ListedUser) {
-        if (confirmId !== target.id || protectedReason(target)) return;
+        if (confirmId !== target.id || protectedReason(target) || !deletePassword) return;
         void run(async () => {
             setSuccess(null);
             setDeletingId(target.id);
+            const payload = {currentPassword: deletePassword};
+            setDeletePassword("");
             try {
-                await apiFetch(`/api/users/${target.id}`, {method: "DELETE"});
+                await apiFetch(`/api/users/${target.id}`, {method: "DELETE", body: JSON.stringify(payload)});
                 setConfirmId(null);
                 setSuccess("User deleted.");
                 refresh();
@@ -50,11 +54,13 @@ export function UsersSettings() {
 
     function createUser(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        if (!currentPassword) return;
         void run(async () => {
             setSuccess(null);
             const roles = roleNames.split(",").map(role => role.trim()).filter(Boolean);
-            const payload = {username: username.trim(), password, roles};
+            const payload = {username: username.trim(), password, roles, currentPassword};
             setPassword("");
+            setCurrentPassword("");
             if (!roles.every(role => canGrantRole(user?.roles, role))) {
                 throw new Error("Only owners can grant owner or admin.");
             }
@@ -97,13 +103,15 @@ export function UsersSettings() {
                     <td>{target.createdAt.slice(0, 10)}</td>
                     <td>{confirmId === target.id ? <div className="settings-danger">
                         <p id={`delete-user-${target.id}`}>Delete {target.username}? This also signs them out of all sessions.</p>
+                        <div className="form-field"><label htmlFor={`delete-password-${target.id}`}>Your current password</label>
+                            <input id={`delete-password-${target.id}`} name="currentPassword" type="password" autoComplete="current-password" required maxLength={256} value={deletePassword} disabled={pending} onChange={event => setDeletePassword(event.target.value)} /></div>
                         <div className="settings-actions">
-                            <button type="button" className="settings-button settings-danger" aria-label={deletingId === target.id ? "Deleting…" : `Confirm delete ${target.username}`} aria-describedby={`delete-user-${target.id}`} disabled={pending || !!protectedReason(target)} onClick={() => deleteUser(target)}>{deletingId === target.id ? "Deleting…" : "Confirm delete"}</button>
-                            <button type="button" className="settings-button secondary" disabled={pending} onClick={() => setConfirmId(null)}>Cancel</button>
+                            <button type="button" className="settings-button settings-danger" aria-label={deletingId === target.id ? "Deleting…" : `Confirm delete ${target.username}`} aria-describedby={`delete-user-${target.id}`} disabled={pending || !deletePassword || !!protectedReason(target)} onClick={() => deleteUser(target)}>{deletingId === target.id ? "Deleting…" : "Confirm delete"}</button>
+                            <button type="button" className="settings-button secondary" disabled={pending} onClick={() => { setConfirmId(null); setDeletePassword(""); }}>Cancel</button>
                         </div>
                     </div> : <>
                         <button type="button" className="settings-button settings-danger" aria-label={`Delete ${target.username}`} aria-describedby={protectedReason(target) ? `protected-user-${target.id}` : undefined}
-                            disabled={pending || !!protectedReason(target)} onClick={() => setConfirmId(target.id)}>Delete</button>
+                            disabled={pending || !!protectedReason(target)} onClick={() => { setConfirmId(target.id); setDeletePassword(""); }}>Delete</button>
                         {protectedReason(target) && <p id={`protected-user-${target.id}`}>{protectedReason(target)}</p>}
                     </>}</td>
                 </tr>)}</tbody>
@@ -116,6 +124,8 @@ export function UsersSettings() {
             <div className="form-field"><label htmlFor="users-password">Password</label>
                 <input id="users-password" name="password" type="password" autoComplete="new-password" required minLength={10} maxLength={256} value={password} disabled={pending} onChange={event => setPassword(event.target.value)} aria-describedby="users-password-help" />
                 <p id="users-password-help">Use 10–256 characters. The new user can change their password in Account.</p></div>
+            <div className="form-field"><label htmlFor="users-current-password">Your current password</label>
+                <input id="users-current-password" name="currentPassword" type="password" autoComplete="current-password" required maxLength={256} value={currentPassword} disabled={pending} onChange={event => setCurrentPassword(event.target.value)} /></div>
             <div className="form-field"><label htmlFor="users-roles">Roles</label>
                 <input id="users-roles" name="roles" value={roleNames} disabled={pending} onChange={event => setRoleNames(event.target.value)} aria-describedby="users-roles-help" />
                 <p id="users-roles-help">Enter comma-separated role names, or leave blank for no roles. The server validates names against configured roles. Only owners can grant owner or admin.</p></div>

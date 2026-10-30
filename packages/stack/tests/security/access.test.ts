@@ -21,7 +21,7 @@ describe("role granting (H1)", () => {
 
     it("an admin cannot create an owner or an admin", async () => {
         for (const roles of [["owner"], ["admin"], ["editor", "admin"]]) {
-            const res = await postJson(admin, "/api/users", {username: `x-${roles.join("-")}`, password: "some-password-123", roles});
+            const res = await postJson(admin, "/api/users", {currentPassword: ADMIN_PASSWORD, username: `x-${roles.join("-")}`, password: "some-password-123", roles});
             expect(res.status).toBe(403);
             expect(res.body.code).toBe("ROLE_NOT_GRANTABLE");
         }
@@ -29,31 +29,31 @@ describe("role granting (H1)", () => {
     });
 
     it("an admin can grant app roles; an owner can grant admin", async () => {
-        const editor = await postJson(admin, "/api/users", {username: "ed", password: "editor-password-1", roles: ["editor", "editor"]});
+        const editor = await postJson(admin, "/api/users", {currentPassword: ADMIN_PASSWORD, username: "ed", password: "editor-password-1", roles: ["editor", "editor"]});
         expect(editor.status).toBe(201);
         expect(editor.body.data.user.roles).toEqual(["editor"]);
 
-        const second = await postJson(owner, "/api/users", {username: "admin2", password: ADMIN_PASSWORD, roles: ["admin"]});
+        const second = await postJson(owner, "/api/users", {currentPassword: "owner-password-123", username: "admin2", password: ADMIN_PASSWORD, roles: ["admin"]});
         expect(second.status).toBe(201);
     });
 
     it("rejects unknown roles", async () => {
-        const res = await postJson(owner, "/api/users", {username: "ghost", password: "ghost-password-1", roles: ["superuser"]});
+        const res = await postJson(owner, "/api/users", {currentPassword: "owner-password-123", username: "ghost", password: "ghost-password-1", roles: ["superuser"]});
         expect(res.status).toBe(400);
     });
 
     it("admins cannot delete owners or admins; owners can delete admins", async () => {
-        await createUserVia(admin, "ed", "editor-password-1", ["editor"]);
+        await createUserVia(admin, "ed", "editor-password-1", ["editor"], ADMIN_PASSWORD);
         await createUserVia(owner, "admin2", ADMIN_PASSWORD, ["admin"]);
         const users = await fakePrisma.user.findMany();
         const idOf = (name: string) => users.find(user => user.username === name)!.id;
 
-        expect((await del(admin, `/api/users/${idOf("owner")}`)).status).toBe(403);
-        expect((await del(admin, `/api/users/${idOf("admin2")}`)).status).toBe(403);
-        expect((await del(admin, `/api/users/${idOf("admin")}`)).status).toBe(400); // self
-        expect((await del(owner, `/api/users/${idOf("owner")}`)).status).toBe(400); // self
-        expect((await del(admin, `/api/users/${idOf("ed")}`)).status).toBe(200);
-        expect((await del(owner, `/api/users/${idOf("admin2")}`)).status).toBe(200);
+        expect((await del(admin, `/api/users/${idOf("owner")}`, {currentPassword: ADMIN_PASSWORD})).status).toBe(403);
+        expect((await del(admin, `/api/users/${idOf("admin2")}`, {currentPassword: ADMIN_PASSWORD})).status).toBe(403);
+        expect((await del(admin, `/api/users/${idOf("admin")}`, {currentPassword: ADMIN_PASSWORD})).status).toBe(400); // self
+        expect((await del(owner, `/api/users/${idOf("owner")}`, {currentPassword: "owner-password-123"})).status).toBe(400); // self
+        expect((await del(admin, `/api/users/${idOf("ed")}`, {currentPassword: ADMIN_PASSWORD})).status).toBe(200);
+        expect((await del(owner, `/api/users/${idOf("admin2")}`, {currentPassword: "owner-password-123"})).status).toBe(200);
     });
 
     it("a delete racing another delete answers 404, not 500", async () => {
@@ -66,7 +66,7 @@ describe("role granting (H1)", () => {
         };
 
         try {
-            const [first, second] = await Promise.all([del(owner, `/api/users/${id}`), del(owner, `/api/users/${id}`)]);
+            const [first, second] = await Promise.all([del(owner, `/api/users/${id}`, {currentPassword: "owner-password-123"}), del(owner, `/api/users/${id}`, {currentPassword: "owner-password-123"})]);
             expect([first.status, second.status].sort()).toEqual([200, 404]);
             expect([first, second].find(res => res.status === 404)!.body.code).toBe("USER_NOT_FOUND");
         } finally {
@@ -83,8 +83,8 @@ describe("role granting (H1)", () => {
 
         try {
             const [first, second] = await Promise.all([
-                postJson(owner, "/api/users", {username: "twin", password: "twin-password-1", roles: []}),
-                postJson(owner, "/api/users", {username: "twin", password: "twin-password-1", roles: []}),
+                postJson(owner, "/api/users", {username: "twin", password: "twin-password-1", roles: [], currentPassword: "owner-password-123"}),
+                postJson(owner, "/api/users", {username: "twin", password: "twin-password-1", roles: [], currentPassword: "owner-password-123"}),
             ]);
             expect([first.status, second.status].sort()).toEqual([201, 409]);
             expect([first, second].find(res => res.status === 409)!.body.code).toBe("USERNAME_TAKEN");
@@ -104,7 +104,7 @@ describe("API keys (H11)", () => {
     });
 
     it("POST /users never returns an API key and users start without one", async () => {
-        const res = await postJson(owner, "/api/users", {username: "alice", password: ALICE_PASSWORD, roles: []});
+        const res = await postJson(owner, "/api/users", {currentPassword: "owner-password-123", username: "alice", password: ALICE_PASSWORD, roles: []});
         expect(res.status).toBe(201);
         expect(JSON.stringify(res.body)).not.toMatch(/apiKey|toto_/);
         expect((await fakePrisma.user.findFirst({where: {username: "alice"}}))?.apiKey).toBeNull();
@@ -183,7 +183,7 @@ describe("Bearer requests and CSRF (L1)", () => {
     });
 
     it("a junk Bearer header plus a session cookie neither skips CSRF nor authenticates via the session", async () => {
-        const body = {username: "nocsrf", password: "nocsrf-password-1", roles: ["admin"]};
+        const body = {username: "nocsrf", password: "nocsrf-password-1", roles: ["admin"], currentPassword: "owner-password-123"};
 
         const noCsrf = await owner.post("/api/users").send(body);
         expect(noCsrf.status).toBe(403);
@@ -200,7 +200,7 @@ describe("Bearer requests and CSRF (L1)", () => {
 
     it("non-Bearer Authorization (e.g. proxy Basic auth) keeps session auth and CSRF", async () => {
         const basic = `Basic ${Buffer.from("proxy:pass").toString("base64")}`;
-        const res = await owner.post("/api/users").set("Authorization", basic).send({username: "viaBasic", password: "basic-password-1", roles: []});
+        const res = await owner.post("/api/users").set("Authorization", basic).send({username: "viaBasic", password: "basic-password-1", roles: [], currentPassword: "owner-password-123"});
         expect(res.status).toBe(403);
         expect(res.body.code).toBe("CSRF_INVALID");
 

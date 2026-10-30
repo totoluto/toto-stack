@@ -3,6 +3,8 @@ import request from "supertest";
 import {createServer} from "toto-stack";
 import {createFakePrisma} from "../fakePrisma";
 
+const OWNER_PASSWORD = "owner-password-123";
+
 // Deliberately do not load templateRoutes: user management belongs to the package.
 describe("built-in user API", () => {
     async function context() {
@@ -10,9 +12,9 @@ describe("built-in user API", () => {
         const server = createServer({prisma, roles: ["editor"], logger: {patchConsole: false}});
         const app = await server.createApp();
         const {userService} = server.dependencies;
-        const owner = await userService.createUser("owner", "owner-password-123", ["owner"]);
+        const owner = await userService.createUser("owner", OWNER_PASSWORD, ["owner"]);
         const key = await userService.issueApiKey(owner.id);
-        return {app, prisma, server, key};
+        return {app, prisma, server, key, owner};
     }
 
     let ctx: Awaited<ReturnType<typeof context>>;
@@ -21,7 +23,7 @@ describe("built-in user API", () => {
     it("creates, lists and deletes users without any app routes", async () => {
         const {app, key} = ctx;
         const created = await request(app).post("/api/users").set("Authorization", `Bearer ${key}`)
-            .send({username: " member ", password: "member-password-123", roles: ["editor", "editor"]});
+            .send({currentPassword: OWNER_PASSWORD, username: " member ", password: "member-password-123", roles: ["editor", "editor"]});
         expect(created.status).toBe(201);
         expect(created.body.data.user).toEqual({id: expect.any(Number), username: "member", roles: ["editor"]});
 
@@ -30,16 +32,16 @@ describe("built-in user API", () => {
         expect(listed.body.data.users).toEqual(expect.arrayContaining([
             {id: created.body.data.user.id, username: "member", roles: ["editor"], otpEnabled: false, createdAt: expect.any(String)},
         ]));
-        const deleted = await request(app).delete(`/api/users/${created.body.data.user.id}`).set("Authorization", `Bearer ${key}`);
+        const deleted = await request(app).delete(`/api/users/${created.body.data.user.id}`).set("Authorization", `Bearer ${key}`).send({currentPassword: OWNER_PASSWORD});
         expect(deleted.status).toBe(200);
-        const missing = await request(app).delete(`/api/users/${created.body.data.user.id}`).set("Authorization", `Bearer ${key}`);
+        const missing = await request(app).delete(`/api/users/${created.body.data.user.id}`).set("Authorization", `Bearer ${key}`).send({currentPassword: OWNER_PASSWORD});
         expect(missing.status).toBe(404);
         expect(missing.body.code).toBe("USER_NOT_FOUND");
     });
 
     it("requires authentication for every user management endpoint", async () => {
         const {app} = ctx;
-        for (const req of [request(app).get("/api/users"), request(app).post("/api/users").send({}), request(app).delete("/api/users/2")]) {
+        for (const req of [request(app).get("/api/users"), request(app).post("/api/users").send({username: "member", password: "member-password-123", currentPassword: OWNER_PASSWORD}), request(app).delete("/api/users/2").send({currentPassword: OWNER_PASSWORD})]) {
             const res = await req.set("Authorization", "Bearer invalid");
             expect(res.status).toBe(401);
             expect(res.body.code).toBe("UNAUTHORIZED");
@@ -50,7 +52,7 @@ describe("built-in user API", () => {
         const {app, server} = ctx;
         const member = await server.dependencies.userService.createUser("member", "member-password-123");
         const key = await server.dependencies.userService.issueApiKey(member.id);
-        for (const req of [request(app).get("/api/users"), request(app).post("/api/users").send({}), request(app).delete("/api/users/1")]) {
+        for (const req of [request(app).get("/api/users"), request(app).post("/api/users").send({username: "other", password: "other-password-123", currentPassword: "member-password-123"}), request(app).delete("/api/users/1").send({currentPassword: "member-password-123"})]) {
             const res = await req.set("Authorization", `Bearer ${key}`);
             expect(res.status).toBe(403);
             expect(res.body.code).toBe("FORBIDDEN");
@@ -65,7 +67,7 @@ describe("built-in user API", () => {
             {username: "member", password: "member-password-123", roles: ["unknown"]},
             {username: "member", password: "member-password-123", apiKey: "injected"},
         ]) {
-            const res = await request(app).post("/api/users").set("Authorization", `Bearer ${key}`).send(body);
+            const res = await request(app).post("/api/users").set("Authorization", `Bearer ${key}`).send({...body, currentPassword: OWNER_PASSWORD});
             expect(res.status).toBe(400);
             expect(res.body.code).toBe("VALIDATION_FAILED");
         }
@@ -73,10 +75,10 @@ describe("built-in user API", () => {
     });
 
     it("loads only identity and roles when checking a deletion target", async () => {
-        const {app, prisma, key, server} = ctx;
+        const {app, prisma, key, server, owner} = ctx;
         const member = await server.dependencies.userService.createUser("member", "member-password-123");
         const start = prisma.$fake.calls.length;
-        const res = await request(app).delete(`/api/users/${member.id}`).set("Authorization", `Bearer ${key}`);
+        const res = await request(app).delete(`/api/users/${member.id}`).set("Authorization", `Bearer ${key}`).send({currentPassword: OWNER_PASSWORD});
         expect(res.status).toBe(200);
         const lookups = prisma.$fake.calls.slice(start).filter(call => call.model === "user" && (call.operation === "findFirst" || call.operation === "findUnique"));
         expect(lookups).toEqual([
@@ -85,6 +87,10 @@ describe("built-in user API", () => {
                 where: {id: member.id},
                 select: {id: true, username: true, roles: {select: {role: {select: {name: true}}}}},
             }}),
+            expect.objectContaining({operation: "findFirst", args: {
+                where: {id: owner.id},
+                include: {roles: {include: {role: true}}},
+            }}), // Actor lookup for password verification includes credentials.
         ]);
     });
 
@@ -93,7 +99,7 @@ describe("built-in user API", () => {
         const start = prisma.$fake.calls.length;
         const ids = ["0", "-1", "1.5", "abc", "1e0", "0x1", "01", "9007199254740992", "2147483648"];
         for (const id of ids) {
-            const res = await request(app).delete(`/api/users/${id}`).set("Authorization", `Bearer ${key}`);
+            const res = await request(app).delete(`/api/users/${id}`).set("Authorization", `Bearer ${key}`).send({currentPassword: OWNER_PASSWORD});
             expect(res.status, id).toBe(400);
             expect(res.body.code, id).toBe("INVALID_USER_ID");
         }
