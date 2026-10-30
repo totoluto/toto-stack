@@ -1,5 +1,13 @@
 # toto-stack
 
+## 0.2.0
+
+### Minor Changes
+
+- Promote user management to a built-in API: `GET`/`POST /api/users` and `DELETE /api/users/:id` are now mounted by the framework without app routes. Preserve admin/owner authorization, protected accounts, strict creation validation and secret-free responses. Reject malformed or out-of-range deletion IDs before database access, and load only identity and roles for deletion authorization. [#24](https://github.com/totoluto/toto-stack/pull/24) by [@totoluto](https://github.com/totoluto)
+  
+  Existing apps should remove their copied `UsersRoute.ts` and its registration from `server/routes/index.ts`; framework endpoints take precedence over app routes at the same paths. Review any local customizations and move app-specific extensions to distinct paths. No Prisma migration is required.
+
 ## 0.1.1
 
 ### Patch Changes
