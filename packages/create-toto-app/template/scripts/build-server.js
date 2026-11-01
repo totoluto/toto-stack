@@ -33,7 +33,7 @@ await build({
     bundle: true,
     platform: "node",
     format: "esm",
-    target: "node22.12",
+    target: "node22.22",
     plugins: [externalizePackages],
     // Bundled CommonJS code (inside the Prisma runtime) calls require().
     banner: {js: 'import {createRequire as __createRequire} from "node:module"; const require = __createRequire(import.meta.url);'},

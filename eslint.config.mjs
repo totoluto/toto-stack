@@ -49,6 +49,13 @@ export default defineConfig([
         },
     },
     {
+        // Route metadata is not a component boundary; its lazy page modules are.
+        files: ['packages/create-toto-app/template/client/src/AppRoutes.tsx'],
+        rules: {
+            'react-refresh/only-export-components': 'off',
+        },
+    },
+    {
         // Type-aware promise rules for the published package: an unawaited
         // promise in a handler or service is an unhandled rejection in production.
         files: ['packages/stack/src/**/*.{ts,tsx}'],

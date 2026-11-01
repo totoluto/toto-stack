@@ -77,7 +77,7 @@ function npmPackDryRun() {
             stdio: ["ignore", "pipe", "inherit"],
         });
     } catch (err) {
-        throw new Error(`could not run \`npm pack --dry-run\` (${[npm.command, ...npm.args].join(" ")}): ${err.message}`);
+        throw new Error(`could not run \`npm pack --dry-run\` (${[npm.command, ...npm.args].join(" ")}): ${err.message}`, {cause: err});
     }
 
     let result;

@@ -48,7 +48,7 @@ Password hashing uses a native module that ships as prebuilt, platform-specific 
 
 ### `ERR_REQUIRE_ESM` or `require() of ES Module`
 
-`toto-stack` is ESM-only, and CommonJS can load it only on Node ≥ 22.12 (`require(esm)`). Upgrade Node, or make your server an ES module.
+`toto-stack` is ESM-only; CommonJS loads it through Node's `require(esm)`. Use a supported Node version (≥ 22.22.0), or make your server an ES module.
 
 ### The process doesn't exit after `stop()`, or logs `Forcing exit`
 

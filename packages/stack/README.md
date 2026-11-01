@@ -48,8 +48,8 @@ The rest of this page documents the package itself.
 
 | | Supported |
 |---|---|
-| Node.js | `>=22.12` |
-| Module format | ESM only. CommonJS apps can `require("toto-stack")` through Node's `require(esm)` (Node ≥ 22.12). |
+| Node.js | `>=22.22.0` |
+| Module format | ESM only. CommonJS apps can `require("toto-stack")` through Node's `require(esm)`. |
 | Prisma | `prisma@^7` and `@prisma/client@^7` with the `prisma-client` generator and a driver adapter |
 | Database | MySQL or MariaDB (through `@prisma/adapter-mariadb`). Other Prisma providers aren't tested or supported. |
 | Client entry (optional) | `react` 18 or 19, `react-router` 7 or 8 (optional peer dependencies) |

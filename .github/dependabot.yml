@@ -20,12 +20,16 @@ updates:
           - minor
           - patch
     ignore:
+      # typescript-eslint 8.72 supports TypeScript >=4.8.4 <6.1, not 7.
+      # Revisit when the lint toolchain supports it; keep the release installable.
+      - dependency-name: typescript
+        versions: [">=7.0.0"]
       # Prisma 8 (RC at the time of writing) has no MySQL/MariaDB support yet.
       - dependency-name: prisma
         versions: ["8.x"]
       - dependency-name: "@prisma/*"
         versions: ["8.x"]
-      # The types must match the oldest supported Node (engines: >=22.12).
+      # The types must match the oldest supported Node (engines: >=22.22.0).
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
 
