@@ -2,7 +2,7 @@
 
 Scaffolds a new [toto-stack](https://github.com/totoluto/toto-stack/tree/master/packages/stack#readme) app: an Express 5 + Prisma 7 backend with login, TOTP MFA, sessions, roles, CSRF protection, rate limiting and user management, plus a React client. Docker files for local development and production are included.
 
-Requires Node.js ≥ 22.12. The generated app uses MariaDB, which can run in Docker locally (Docker Engine 20.10+ with Docker Compose v2.1+).
+Requires Node.js ≥ 22.22.0. The generated app uses MariaDB, which can run in Docker locally (Docker Engine 20.10+ with Docker Compose v2.1+).
 
 ## Usage
 

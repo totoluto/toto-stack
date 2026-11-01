@@ -3,8 +3,8 @@
 # Pinned base image for reproducible builds. Kept as a literal tag (not a
 # build arg) so Dependabot's docker ecosystem can propose updates; change it
 # here to use another Node version. Optionally pin a digest too:
-# node:24.21.0-alpine3.24@sha256:...
-FROM node:24.21.0-alpine3.24 AS base
+# node:26.12.1-alpine3.24@sha256:...
+FROM node:26.12.1-alpine3.24 AS base
 
 # ---- deps: full dependency tree (build tools + Prisma CLI) ----
 FROM base AS deps

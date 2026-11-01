@@ -7,7 +7,7 @@ To report a security vulnerability, **don't open an issue**; follow [SECURITY.md
 ## Development setup
 
 **Requirements:**
-- **Node.js ≥ 22.12.** CI tests 22.12.0, 22.x, 24.x and 26.x, and `.nvmrc` selects 24. Building with tsdown is smoothest on Node ≥ 22.18; earlier 22.x versions work but print `EBADENGINE` warnings at install.
+- **Node.js ≥ 22.22.0.** CI tests 22.22.0, 22.x, 24.x and 26.x, and `.nvmrc` selects 24. The minimum covers the runtime, React Router 8 and the build/lint toolchain.
 - **npm**, which comes with Node. The repository uses npm workspaces and a v3 lockfile; please don't commit pnpm, Yarn or Bun lockfiles.
 - **Docker** for the MariaDB integration tests and for running the template app locally. On macOS, Docker Desktop or [Colima](https://github.com/abiosoft/colima) (`colima start`) both work.
 
@@ -43,7 +43,7 @@ The root scripts and test suites are listed in the [README](README.md#developing
 | `npm run test:artifact` | When touching packaging: `package.json` `exports`/`files`, the build config, dependencies |
 | `npm run test:scaffold` | When touching the CLI or the template (`-- --db-url …` boots the app; `--docker` builds the images) |
 
-**CI** runs the unit tests on Node 22.12.0, 22.x, 24.x and 26.x. The CLI tests also run on **Windows**, so keep `create-toto-app` free of POSIX-only paths and shell commands. Dependabot proposes updates for npm dependencies, GitHub Actions, and the template's Node base image and Compose images.
+**CI** runs the unit tests on Node 22.22.0, 22.x, 24.x and 26.x. The CLI tests also run on **Windows**, so keep `create-toto-app` free of POSIX-only paths and shell commands. Dependabot proposes updates for npm dependencies, GitHub Actions, and the template's Node base image and Compose images.
 
 **Writing tests:**
 - **Bug fixes** come with a regression test.

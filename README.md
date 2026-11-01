@@ -21,7 +21,7 @@ Everything is pre-wired, so you start with your own routes and screens.
 
 ## Quick start
 
-Requires Node.js ≥ 22.12 and Docker (for the local MariaDB).
+Requires Node.js ≥ 22.22.0 and Docker (for the local MariaDB).
 
 ```bash
 npm create toto-app@latest my-app
@@ -38,8 +38,8 @@ Open http://localhost:3000/login and create the owner account with the `SETUP_TO
 
 | | Supported |
 |---|---|
-| Node.js | `>=22.12` |
-| Module format | ESM only. CommonJS apps load it through `require(esm)` (Node ≥ 22.12). |
+| Node.js | `>=22.22.0` |
+| Module format | ESM only. CommonJS apps load it through Node's `require(esm)`. |
 | Prisma | 7.x (`prisma@^7`, `@prisma/client@^7`). Prisma 8 is not supported, and npm's `latest` tag for `prisma` is currently an 8.x pre-release. |
 | Database | MySQL / MariaDB through `@prisma/adapter-mariadb` |
 | Client entry | React 18 or 19 with `react-router` 7 or 8 |

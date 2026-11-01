@@ -29,6 +29,12 @@ Every release has notes in the package changelogs (`packages/stack/CHANGELOG.md`
 
 To see what changed in the template between two releases, diff `packages/create-toto-app/template` between the two release tags (`create-toto-app@<version>`), e.g. `git diff create-toto-app@0.1.0 create-toto-app@0.2.0 -- packages/create-toto-app/template`. Alternatively, scaffold a throwaway app with the new version (`npm create toto-app@<version> tmp-app`) and compare it with yours.
 
+## Node.js minimum is now 22.22.0
+
+Upgrade Node.js to at least 22.22.0 before installing this release or generating an app. React Router 8 and ESLint 10 raise the dependency toolchain requirements. Node 24 and 26 remain supported; the generated Dockerfile now uses Node 26. Existing apps keep their copied Dockerfile until you update it.
+
+TypeScript stays on 5.x while typescript-eslint does not support TypeScript 7. No database migration is required for these dependency updates.
+
 ## User management is now built in
 
 `/api/users` is maintained by `toto-stack` and mounted before app routes. Existing apps should remove the `UsersRoute` import and registration from `server/routes/index.ts`, then remove the copied `server/routes/UsersRoute.ts`. No Prisma migration is needed. If you customized that route, review the changes: a copied route at the same path no longer overrides the core endpoints. Put app-specific extensions on distinct paths rather than relying on the old template route.
@@ -75,6 +81,6 @@ Generated apps carry npm `overrides` (`mariadb`, `mysql2`, `deepmerge-ts`) that 
 
 ## Toolchain versions
 
-- **Node.js:** `>=22.12`. CI tests 22.12.0, the latest 22.x, 24.x and 26.x.
+- **Node.js:** `>=22.22.0`. CI tests 22.22.0, the latest 22.x, 24.x and 26.x.
 - **Prisma:** 7.x. Prisma 8 is not supported yet. Keep `prisma` and `@prisma/client` on `^7`; npm's `latest` tag for `prisma` points to 8.x pre-releases.
 - **React** 18/19 and **react-router** 7/8 for `toto-stack/client`.

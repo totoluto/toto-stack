@@ -102,7 +102,8 @@ export function registerFrontendRoutes(frontend: FrontendConfig): Router {
 
     router.use(express.static(frontend.dir, {setHeaders: noCacheForIndex}));
     router.get("*path", (_req, res, next) => {
-        res.sendFile(indexFile, {cacheControl: false, headers: {"Cache-Control": "no-cache"}}, err => {
+        // Check dotfiles relative to the public root, not its deployment parents.
+        res.sendFile("index.html", {root: frontend.dir, cacheControl: false, headers: {"Cache-Control": "no-cache"}}, err => {
             if (err) next(err);
         });
     });

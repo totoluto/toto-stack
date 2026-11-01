@@ -1,4 +1,4 @@
-import chalk from "chalk";
+import chalk, {type ChalkInstance} from "chalk";
 import pino from "pino";
 import {formatWithOptions, inspect} from "node:util";
 import {getRequestId} from "@server/libs/RequestContext";
@@ -13,7 +13,7 @@ type EmittingLevel = Exclude<LogLevel, "silent">;
 
 const LEVEL_RANK: Record<LogLevel, number> = {debug: 20, info: 30, warn: 40, error: 50, silent: Infinity};
 
-const LEVEL_STYLE: Record<EmittingLevel, chalk.Chalk> = {
+const LEVEL_STYLE: Record<EmittingLevel, ChalkInstance> = {
     debug: chalk.green,
     info: chalk.hex("#749BC7"),
     warn: chalk.yellow,

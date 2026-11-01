@@ -286,6 +286,19 @@ describe("frontend (M7)", () => {
         expect(res.headers["content-type"]).toMatch(/json/);
     });
 
+    it("serves the SPA fallback under a hidden parent directory", async () => {
+        const dir = path.join(tempDir("toto-frontend-"), ".deployment", "public");
+        fs.mkdirSync(dir, {recursive: true});
+        fs.writeFileSync(path.join(dir, "index.html"), "<h1>hidden deployment</h1>");
+
+        const app = await makeServer({frontend: {dir}}).createApp();
+        const res = await request(app).get("/dashboard");
+
+        expect(res.status).toBe(200);
+        expect(res.text).toBe("<h1>hidden deployment</h1>");
+        expect(res.headers["cache-control"]).toBe("no-cache");
+    });
+
     it("returns 404 (not 500) when the build is missing", async () => {
         const dir = tempDir("toto-empty-");
         const app = await makeServer({frontend: {dir}}).createApp();
