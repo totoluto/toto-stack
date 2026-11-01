@@ -1,6 +1,6 @@
 {
   "name": "create-toto-app",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Scaffold a new toto-stack app: secure Express 5 + Prisma backend with auth/MFA/RBAC and a React client, pre-wired.",
   "keywords": [
     "create",

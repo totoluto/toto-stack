@@ -1,5 +1,25 @@
 # create-toto-app
 
+## 0.2.0
+
+### Minor Changes
+
+- Replace placeholder settings with functional account security, API key, session revocation, role-aware user management, notification delivery and service health controls. Refine the template's landing, authentication, dashboard and navigation styling while preserving its dark neutral and indigo palette, with responsive layouts and accessible interaction feedback. No new dependencies or database migrations are required; previously generated apps can adopt the client changes manually. [#24](https://github.com/totoluto/toto-stack/pull/24) by [@totoluto](https://github.com/totoluto)
+
+- Promote user management to a built-in API: `GET`/`POST /api/users` and `DELETE /api/users/:id` are now mounted by the framework without app routes. Preserve admin/owner authorization, protected accounts, strict creation validation and secret-free responses. Reject malformed or out-of-range deletion IDs before database access, and load only identity and roles for deletion authorization. [#24](https://github.com/totoluto/toto-stack/pull/24) by [@totoluto](https://github.com/totoluto)
+  
+  Existing apps should remove their copied `UsersRoute.ts` and its registration from `server/routes/index.ts`; framework endpoints take precedence over app routes at the same paths. Review any local customizations and move app-specific extensions to distinct paths. No Prisma migration is required.
+
+- Breaking: raise the minimum Node.js version from 22.12 to 22.22.0. Upgrade Node before installing this release or scaffolding an app. [#28](https://github.com/totoluto/toto-stack/pull/28) by [@totoluto](https://github.com/totoluto)
+  
+  Refresh runtime, client and build dependencies, including Express, Chalk 6, React Router 8, Vite 8 and the Node 26 container image. Update lint tooling together for ESLint 10 compatibility and retain TypeScript 5 while typescript-eslint does not support TypeScript 7.
+  
+  Serve SPA deep links correctly when the public directory has a hidden deployment parent, without relaxing public-root dotfile protection.
+
+### Patch Changes
+
+- Refine Changesets configuration, update Git ignore rules, and improve script defaults [#13](https://github.com/totoluto/toto-stack/pull/13) by [@totoluto](https://github.com/totoluto)
+
 ## 0.1.1
 
 No changes in this release.
