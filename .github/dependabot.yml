@@ -20,6 +20,13 @@ updates:
           - minor
           - patch
     ignore:
+      # Astro 7 requires Node >=22.23.4; migrate this docs set together later.
+      - dependency-name: astro
+        versions: ["7.x"]
+      - dependency-name: "@astrojs/starlight"
+        versions: [">=0.41.0 <0.44.0"]
+      - dependency-name: starlight-links-validator
+        versions: [">=0.25.0 <0.28.0"]
       # typescript-eslint 8.72 supports TypeScript >=4.8.4 <6.1, not 7.
       # Revisit when the lint toolchain supports it; keep the release installable.
       - dependency-name: typescript
