@@ -15,7 +15,7 @@
     "@astrojs/check": "~0.9.12",
 
     "@astrojs/starlight": "~0.40.0",
-    "astro": "~6.4.8",
+    "astro": "~7.4.7",
     "starlight-links-validator": "~0.24.0",
     "starlight-typedoc": "~0.23.2",
     "typedoc": "~0.28.20",
