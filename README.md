@@ -47,6 +47,8 @@ Open http://localhost:3000/login and create the owner account with the `SETUP_TO
 
 ## Documentation
 
+The [documentation site](https://totoluto.github.io/toto-stack/) covers the framework, generated application and public APIs. To work on it locally, run `npm run docs:dev`; see [the docs workspace](packages/docs/README.md) for validation and hosting instructions.
+
 - [`toto-stack` README](packages/stack/README.md): install, schema, configuration and environment reference, routes, services, roles, jobs, client.
 - [API reference](docs/api.md): every endpoint, framework-provided and template-provided.
 - [Security model](docs/security.md): threat model, sessions, CSRF, API keys, passwords, TOTP, rate limits, limitations.

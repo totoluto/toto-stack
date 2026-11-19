@@ -81,7 +81,7 @@ The Prisma CLI is a dev dependency: in production you only run `prisma migrate d
 }
 ```
 
-npm applies `overrides` only from the root `package.json`. pnpm and Yarn ignore it and use their own fields (`pnpm.overrides`, `resolutions`), while Bun reads `overrides` as is. See [Troubleshooting](https://github.com/totoluto/toto-stack/blob/master/docs/troubleshooting.md#overrides-with-pnpm-yarn-or-bun).
+npm applies `overrides` only from the root `package.json`. pnpm and Yarn ignore it and use their own fields (`pnpm.overrides`, `resolutions`), while Bun reads `overrides` as is. See [Troubleshooting](https://totoluto.github.io/toto-stack/maintain/troubleshooting/#overrides-with-pnpm-yarn-or-bun).
 
 ## Prisma schema
 
@@ -142,9 +142,9 @@ The stack reads and writes five models: `User`, `Role`, `UserRole`, `Session` an
    npx prisma generate                  # Prisma 7: migrate dev no longer generates the client
    ```
 
-   - `migrate dev` needs a throwaway **shadow database**. The database user must be allowed to create one, or you set `shadowDatabaseUrl`; see [Troubleshooting](https://github.com/totoluto/toto-stack/blob/master/docs/troubleshooting.md#prisma-migrate-dev-fails-creating-the-shadow-database).
+   - `migrate dev` needs a throwaway **shadow database**. The database user must be allowed to create one, or you set `shadowDatabaseUrl`; see [Troubleshooting](https://totoluto.github.io/toto-stack/maintain/troubleshooting/#prisma-migrate-dev-fails-creating-the-shadow-database).
    - In production, apply the committed migrations with `npx prisma migrate deploy`.
-   - When a toto-stack release changes `base.prisma`, follow the [schema change procedure](https://github.com/totoluto/toto-stack/blob/master/docs/upgrading.md#schema-changes).
+   - When a toto-stack release changes `base.prisma`, follow the [schema change procedure](https://totoluto.github.io/toto-stack/maintain/upgrading/#schema-changes).
 
 4. **Create the client with the adapter:**
 
@@ -261,7 +261,7 @@ These are the only variables the stack reads. Every one has a config equivalent 
 | `HOST` | `http.host` | Default: all interfaces. |
 | `TRUST_PROXY` | `http.trustProxy` | `true`, `false`, a hop count (`1`), or comma-separated addresses or subnets. Default `false`. `true` logs a production warning, because clients can then spoof their IP. |
 | `ALLOWED_ORIGINS` | `security.allowedOrigins` | Comma-separated origins (`https://app.example.com`), no paths or trailing slashes. Required in production, https only. |
-| `SESSION_SECRET` | `security.sessionSecret` | Required in production. At least 32 characters, at least min(10, length/4) distinct characters, and not a recognisable placeholder: `change-me`, `replace`, `example`, `placeholder` or `not-secure` written as words anywhere (e.g. `CHANGE_ME`, `pleaseReplaceThis`), or a value made only of separated words containing `secret`, `todo`, `your` or `xxx`. The check is narrow, so a hand-made value like `SuperSecretSessionKey2024` isn't caught; generate secrets ([rules](https://github.com/totoluto/toto-stack/blob/master/docs/security.md#production-mode-node_env)). A weak value is an error in production and a warning in development. Generate one with `openssl rand -base64 48`. |
+| `SESSION_SECRET` | `security.sessionSecret` | Required in production. At least 32 characters, at least min(10, length/4) distinct characters, and not a recognisable placeholder: `change-me`, `replace`, `example`, `placeholder` or `not-secure` written as words anywhere (e.g. `CHANGE_ME`, `pleaseReplaceThis`), or a value made only of separated words containing `secret`, `todo`, `your` or `xxx`. The check is narrow, so a hand-made value like `SuperSecretSessionKey2024` isn't caught; generate secrets ([rules](https://totoluto.github.io/toto-stack/operate/security/#production-mode-node_env)). A weak value is an error in production and a warning in development. Generate one with `openssl rand -base64 48`. |
 | `SETUP_TOKEN` | `security.setupToken` | At least 16 characters, varied, no placeholder markers. Weak values are rejected **in every mode**. If unset, a one-time token is generated and printed to stderr while no user exists. Generate one with `openssl rand -base64 24`. |
 | `TOTP_ISSUER` | `security.totpIssuer` | At most 64 characters, no `:`. |
 | `OTP_ENCRYPTION_KEY` | `security.otpEncryptionKey` | 32 bytes as hex or base64 (`openssl rand -base64 32` or `openssl rand -hex 32`), with varied bytes and no placeholder markers; rejected otherwise in every mode. Keep it stable and backed up. |
@@ -360,7 +360,7 @@ Register it with `createServer({prisma, routes: [TodoRoute]})`.
 
 ### Routes in a scaffolded app
 
-The stack always mounts auth, account security, user management and health. `GET`/`POST /api/users` and `DELETE /api/users/:id` are core APIs restricted to admins and owners, with protected owner accounts and no credential fields in responses. See the [API reference](../../docs/api.md#users-apiusers).
+The stack always mounts auth, account security, user management and health. `GET`/`POST /api/users` and `DELETE /api/users/:id` are core APIs restricted to admins and owners, with protected owner accounts and no credential fields in responses. See the [API reference](https://totoluto.github.io/toto-stack/http/users/).
 
 Both user mutations require `currentPassword` (the authenticated actor's existing password, a string of 1–256 characters), whether authenticated by cookie session or Bearer API key; there is no key-only mutation exception. `POST /api/users` takes `{username, password, currentPassword, roles?}`, with the new user's `password` limited to 10–256 characters. `DELETE /api/users/:id` takes strict JSON `{currentPassword}`. Missing or invalid actor passwords give **400 `VALIDATION_FAILED`**; wrong actor passwords give **403 `PASSWORD_CONFIRMATION_FAILED`**.
 
@@ -553,7 +553,7 @@ createServer({
   - **503 `NO_HANDLERS`** when none are configured.
   - **400 `UNKNOWN_HANDLER`** for unknown ids.
 
-Remote error text is never returned to the client. Details are in the [API reference](https://github.com/totoluto/toto-stack/blob/master/docs/api.md#notifications).
+Remote error text is never returned to the client. Details are in the [API reference](https://totoluto.github.io/toto-stack/http/template/#notifications).
 
 ## Email
 
@@ -591,7 +591,7 @@ log.debug(`request ${getRequestId() ?? "-"}`);
   - the console patch: the first server started with `logger.patchConsole` (default `true`) installs it, and stopping that server undoes it.
 - **Console:** while the patch is active, `console.log/info/debug/warn/error` go through the logger, tagged `console`.
 - **Request ids:** every request gets a random id, never taken from the client and echoed in the `X-Request-Id` response header. `getRequestId()` returns it inside a request, and JSON logs include it.
-- **Secrets:** the stack never logs passwords, tokens or keys. The generated one-time setup token is written directly to stderr instead of the log, so it stays out of log pipelines. See [Security](https://github.com/totoluto/toto-stack/blob/master/docs/security.md#first-run-setup).
+- **Secrets:** the stack never logs passwords, tokens or keys. The generated one-time setup token is written directly to stderr instead of the log, so it stays out of log pipelines. See [Security](https://totoluto.github.io/toto-stack/operate/security/#first-run-setup).
 
 ## Lifecycle
 

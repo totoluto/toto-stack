@@ -71,12 +71,12 @@ The root scripts and test suites are listed in the [README](README.md#developing
 - **Validation:** request bodies are validated with strict zod schemas, through the `BaseRoute` helpers.
 - **Logging:** use `new Logger("Service")`, not `console`. Never log secrets, tokens, password hashes or raw usernames in security contexts.
 - **Configuration:** new settings go through `StackConfig` and `resolveConfig`, which also handles any environment fallback. Code outside the config layer doesn't read `process.env`. Invalid values become `ConfigError` issues.
-- **No custom cryptography.** Use established libraries (`@node-rs/argon2`, otplib) and standard `node:crypto` primitives (AES-GCM, HMAC, HKDF, `timingSafeEqual`, `randomBytes`). Don't implement algorithms or invent formats; see [Cryptography](docs/security.md#cryptography).
+- **No custom cryptography.** Use established libraries (`@node-rs/argon2`, otplib) and standard `node:crypto` primitives (AES-GCM, HMAC, HKDF, `timingSafeEqual`, `randomBytes`). Don't implement algorithms or invent formats; see [Cryptography](https://totoluto.github.io/toto-stack/operate/security/#cryptography).
 - **No import-time side effects.** The package is `sideEffects: false`; timers start in `start()` and stop in `stop()`.
 - **Schema changes:**
   - Change `packages/stack/prisma/base.prisma` and the models in the template's `prisma/schema.prisma` together.
   - Add a template migration.
-  - Describe the change in the changeset ([upgrade procedure](docs/upgrading.md#schema-changes)).
+  - Describe the change in the changeset ([upgrade procedure](https://totoluto.github.io/toto-stack/maintain/upgrading/#schema-changes)).
 - **Documentation:**
   - Update the README, `docs/` and the changeset in the same pull request as the behaviour change.
   - Code snippets in the docs must compile against the package.
@@ -89,7 +89,7 @@ The root scripts and test suites are listed in the [README](README.md#developing
 - **The root `package.json`** covers installs of this monorepo, including the template as a workspace member. npm ignores overrides in workspace `package.json` files.
 - **The template's `package.json`** ships the same overrides to every generated app, where the app is the root project.
 
-Keep the two blocks identical, and remove both once Prisma updates its pin. Check with `npm ls mariadb` and `npm audit --omit=dev`, in the repository and in a freshly scaffolded app.
+Keep these database dependency overrides identical, and remove them from both places once Prisma updates its pin. The monorepo also has a docs-only Starlight override that does not belong in generated apps. Check with `npm ls mariadb` and `npm audit --omit=dev`, in the repository and in a freshly scaffolded app.
 
 ## Commits and pull requests
 
