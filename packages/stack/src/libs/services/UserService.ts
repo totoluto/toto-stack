@@ -1,11 +1,15 @@
 import crypto from "node:crypto";
 import {Role} from "@shared/roles";
 import {PrismaUserType} from "@shared/types/user";
-import {SESSION_USER_SELECT, StackPrismaClient, type StackSessionUser} from "@server/libs/prisma/StackPrismaClient";
+import {
+    ACCOUNT_SELECT, ACCOUNT_SESSION_SELECT, SESSION_USER_SELECT,
+    StackPrismaClient, type StackAccountSessionRow, type StackSessionUser,
+} from "@server/libs/prisma/StackPrismaClient";
 import {PasswordHasher, PasswordHasherOptions} from "@server/libs/security/PasswordHasher";
 import {AppError} from "@server/libs/ErrorHandler";
 import {Logger} from "@server/libs/Logger";
 import {ErrorCode} from "@shared/errorCodes";
+import {opaqueSessionId} from "@server/libs/security/sessionId";
 
 /** Recognisable prefix of API keys (secret scanners can match `toto_` + 43 base64url characters). */
 export const API_KEY_PREFIX = "toto_";
@@ -133,6 +137,25 @@ export class UserService {
         return this.prisma.user.findUnique({where: {id: userID}, select: SESSION_USER_SELECT});
     }
 
+    /** Safe account details and active session handles for the signed-in browser. */
+    public async getAccount(userId: number, currentSessionId: string) {
+        const user = await this.prisma.user.findUniqueOrThrow({where: {id: userId}, select: ACCOUNT_SELECT}).catch(err => {
+            if (typeof err === "object" && err !== null && err.code === "P2025") {
+                throw new AppError(401, "Unauthorized access.", {code: ErrorCode.UNAUTHORIZED});
+            }
+            throw err;
+        });
+        const sessions = await this.prisma.session.findMany({
+            where: {userId, expiresAt: {gt: new Date()}},
+            select: ACCOUNT_SESSION_SELECT,
+            orderBy: {lastSeenAt: "desc"},
+        }) as StackAccountSessionRow[]; // Exactly the ACCOUNT_SESSION_SELECT projection above.
+        return {
+            account: {id: user.id, username: user.username, roles: user.roles.map(({role}) => role.name), otpEnabled: user.otpEnabled, apiKeyEnabled: user.apiKey !== null},
+            sessions: sessions.map(({id, ...metadata}) => ({...metadata, id: opaqueSessionId(id), current: id === currentSessionId})),
+        };
+    }
+
     /**
      * Looks a Bearer key up by its SHA-256 (unique index); loads no credential
      * columns. Malformed keys never reach the database.
@@ -249,10 +272,16 @@ export class UserService {
     }
 
     public async revokeSession(userId: number, sessionID: string): Promise<void> {
+        const sessions = await this.prisma.session.findMany({
+            where: {userId, expiresAt: {gt: new Date()}},
+            select: {id: true},
+        });
+        // Fall back to the legacy raw ID; deletion remains scoped to the caller.
+        const resolvedId = sessions.find(({id}) => opaqueSessionId(id) === sessionID)?.id ?? sessionID;
         await this.prisma.session.deleteMany({
             where: {
                 userId,
-                id: sessionID
+                id: resolvedId
             },
         });
     }

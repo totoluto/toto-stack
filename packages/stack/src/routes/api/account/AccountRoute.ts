@@ -28,6 +28,12 @@ export class AccountRoute extends BaseRoute {
     protected registerRoutes(): void {
         const {userService, mfaService, authRateLimiter} = this.dependencies;
 
+        this.get("/", async (req, res) => {
+            rejectBearer(req);
+            res.setHeader("Cache-Control", "no-store");
+            return respond(res, 200, "success", "Account settings", await userService.getAccount(this.currentUser(req).id, req.sessionID));
+        });
+
         // Changing the password also revokes the API key and every other session.
         this.post("/password", changePasswordSchema, async (req, res, {currentPassword, newPassword}) => {
             const user = await this.requirePasswordConfirmed(req, res, currentPassword);
