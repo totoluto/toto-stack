@@ -8,7 +8,7 @@ import {AccountSettings} from "@client/components/settings/AccountSettings";
 afterEach(cleanup);
 const requests: {path: string; body: unknown; method: string}[] = [];
 const currentSession = {id: "opaque-current", current: true, ipAddress: null, userAgent: null, createdAt: "2026-11-01T10:00:00Z", lastSeenAt: "2026-11-19T10:00:00Z", expiresAt: "2026-12-01T10:00:00Z"};
-const otherSession = {...currentSession, id: "opaque/handle:do-not-parse", current: false, ipAddress: "192.0.2.10", userAgent: "Other browser"};
+const otherSession = {...currentSession, id: "opaque/handle:do-not-parse", current: false, ipAddress: "192.0.2.10", userAgent: "Mozilla/5.0 (X11; Linux x86_64) Firefox/132.0"};
 let sessionsRevoked = false;
 let failure = false;
 let accountFailure = false;
@@ -128,7 +128,7 @@ it("clears a revealed API key after changing the password", async () => {
     await screen.findByText(/Password updated\./);
     expect(screen.queryByDisplayValue("toto_example")).toBeNull();
     await screen.findByText("No API key configured.");
-    await waitFor(() => expect(screen.queryByText("Other browser")).toBeNull());
+    await waitFor(() => expect(screen.queryByText("Firefox · Computer")).toBeNull());
 });
 
 it("refreshes again after overlapping mutations and awaits the final account snapshot", async () => {
@@ -166,7 +166,7 @@ it("refreshes again after overlapping mutations and awaits the final account sna
         await act(async () => {releaseLatest();});
         await screen.findByText(/Password updated\./);
         expect(screen.getByText("No API key configured.")).toBeTruthy();
-        expect(screen.queryByText("Other browser")).toBeNull();
+        expect(screen.queryByText("Firefox · Computer")).toBeNull();
         expect(screen.queryByDisplayValue("toto_example")).toBeNull();
         expect(screen.queryByRole("button", {name: "Saving…"})).toBeNull();
         expect(accountReads).toBe(3);
@@ -177,13 +177,13 @@ it("refreshes again after overlapping mutations and awaits the final account sna
 
 it("lists owned session metadata and revokes only a selected non-current opaque handle", async () => {
     render(h(AccountSettings));
-    await screen.findByText("Other browser");
+    await screen.findByText("Firefox · Computer");
     expect(screen.queryByLabelText("Session ID")).toBeNull();
     const current = screen.getByText("Current session").closest("li")!;
     expect(within(current).queryByRole("button", {name: "Revoke session"})).toBeNull();
     expect(within(current).getByText(/Use Log out/)).toBeTruthy();
-    const other = screen.getByText("Other browser").closest("li")!;
-    expect(within(other).getByText("192.0.2.10")).toBeTruthy();
+    const other = screen.getByText("Firefox · Computer").closest("li")!;
+    expect(within(other).getByText(/192\.0\.2\.10/)).toBeTruthy();
     expect(other.querySelectorAll("time")).toHaveLength(3);
     expect(other.querySelector("time")!.textContent).not.toBe(otherSession.createdAt);
     fireEvent.click(within(other).getByRole("button", {name: "Revoke session"}));
@@ -193,6 +193,29 @@ it("lists owned session metadata and revokes only a selected non-current opaque 
     fireEvent.click(screen.getByRole("button", {name: "Confirm revoke session"}));
     await screen.findByText("Session revoked.");
     expect(requests[0]).toEqual({path: "/api/account/revoke-session", body: {password: "my-password", sessionID: otherSession.id}, method: "POST"});
-    await waitFor(() => expect(screen.queryByText("Other browser")).toBeNull());
+    await waitFor(() => expect(screen.queryByText("Firefox · Computer")).toBeNull());
     expect(screen.queryByLabelText("Password for session")).toBeNull();
+});
+
+it.each([
+    ["Mozilla/5.0 (iPhone) Version/18.0 Mobile/15E148 Safari/604.1", "Safari · Phone"],
+    ["Mozilla/5.0 (iPad) Version/18.0 Mobile/15E148 Safari/604.1", "Safari · Tablet"],
+    ["Mozilla/5.0 (Linux; Android 14) Chrome/130.0 Safari/537.36", "Chrome · Tablet"],
+    ["Mozilla/5.0 (Linux; Android 14) Chrome/130.0 Mobile Safari/537.36", "Chrome · Phone"],
+    ["Mozilla/5.0 (Windows NT 10.0) Chrome/130.0 Safari/537.36 Edg/130.0", "Edge · Computer"],
+    ["Unrecognized client", "Unknown device"],
+])("shows a compact device label for %s", async (userAgent, label) => {
+    const fetch = globalThis.fetch;
+    vi.stubGlobal("fetch", vi.fn(async (path: string, init?: RequestInit) => {
+        if (path !== "/api/account") return fetch(path, init);
+        return new Response(JSON.stringify({status: "success", data: {account: {apiKeyEnabled: false}, sessions: [{...otherSession, userAgent}]}}));
+    }));
+    render(h(AccountSettings));
+    const row = (await screen.findByText(label)).closest("li")!;
+    expect(row.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+    const details = row.querySelector("details")!;
+    expect(details.open).toBe(false);
+    expect(within(details).getByText(userAgent)).toBeTruthy();
+    fireEvent.click(within(row).getByRole("button", {name: "Revoke session"}));
+    expect(await screen.findByLabelText("Password for session")).toBeTruthy();
 });

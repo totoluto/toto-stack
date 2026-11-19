@@ -1,8 +1,20 @@
 import {FormEvent, ReactNode, useState} from "react";
+import {FaDesktop, FaMobileAlt, FaQuestionCircle, FaTabletAlt} from "react-icons/fa";
 import {apiFetch} from "toto-stack/client";
 import {useSubmit} from "@client/hooks/useSubmit";
 import {useAccount} from "@client/hooks/useAccount";
 import {CopyField} from "@client/components/CopyField";
+
+function sessionDevice(userAgent: string | null) {
+    const ua = userAgent ?? "";
+    const device = /iPad|Tablet|Android(?!.*Mobile)/i.test(ua) ? "Tablet"
+        : /Mobi|iPhone|Android/i.test(ua) ? "Phone"
+        : /Windows|Macintosh|X11|CrOS|Linux/i.test(ua) ? "Computer" : "Unknown device";
+    const Icon = device === "Tablet" ? FaTabletAlt : device === "Phone" ? FaMobileAlt : device === "Computer" ? FaDesktop : FaQuestionCircle;
+    const browser = /Edg[eAiOS]*\//i.test(ua) ? "Edge" : /OPR\/|Opera/i.test(ua) ? "Opera"
+        : /Firefox|FxiOS/i.test(ua) ? "Firefox" : /Chrome|CriOS/i.test(ua) ? "Chrome" : /Safari/i.test(ua) ? "Safari" : "";
+    return {Icon, label: browser ? `${browser} · ${device}` : device};
+}
 
 function ActionForm({title, description, submitLabel, onSubmit, children}: {
     title: string;
@@ -88,14 +100,25 @@ export function AccountSettings() {
         </div>
         <article className="plate-panel settings-card">
             <div className="settings-card-heading"><h2>Sessions</h2><p>Review your signed-in devices. Revoke any other session you no longer recognize.</p></div>
-            <ul className="settings-stack settings-session-list">
-                {snapshot.sessions.map(session => <li className="settings-card" key={session.id}>
-                    <p>{session.userAgent ?? "Unknown device"}</p><p>{session.ipAddress ?? "Unknown IP address"}</p>
-                    <p>Created: <time dateTime={session.createdAt}>{new Date(session.createdAt).toLocaleString()}</time></p>
-                    <p>Last active: <time dateTime={session.lastSeenAt}>{new Date(session.lastSeenAt).toLocaleString()}</time></p>
-                    <p>Expires: <time dateTime={session.expiresAt}>{new Date(session.expiresAt).toLocaleString()}</time></p>
-                    {session.current ? <><strong>Current session</strong><p className="settings-hint">Use Log out to end this session.</p></> : <button className="settings-button secondary" type="button" onClick={() => {setSelectedSession(session.id); setSessionRevoked(false);}}>Revoke session</button>}
-                </li>)}
+            <ul className="settings-session-list">
+                {snapshot.sessions.map(session => {
+                    const {Icon, label} = sessionDevice(session.userAgent);
+                    return <li key={session.id}>
+                        <Icon className="settings-session-icon" aria-hidden="true"/>
+                        <div className="settings-session-info">
+                            <div className="settings-session-heading"><strong>{label}</strong>{session.current && <span className="status-pill">Current session</span>}</div>
+                            <p className="settings-session-meta">{session.ipAddress ?? "Unknown IP address"} · Last active <time dateTime={session.lastSeenAt}>{new Date(session.lastSeenAt).toLocaleString(undefined, {dateStyle: "short", timeStyle: "short"})}</time></p>
+                            <details className="settings-session-details">
+                                <summary>Details</summary>
+                                <p>{session.userAgent ?? "Unknown device"}</p>
+                                <p>Created: <time dateTime={session.createdAt}>{new Date(session.createdAt).toLocaleString()}</time></p>
+                                <p>Expires: <time dateTime={session.expiresAt}>{new Date(session.expiresAt).toLocaleString()}</time></p>
+                                {session.current && <p>Use Log out to end this session.</p>}
+                            </details>
+                        </div>
+                        {!session.current && <button className="settings-button secondary" type="button" onClick={() => {setSelectedSession(session.id); setSessionRevoked(false);}}>Revoke session</button>}
+                    </li>;
+                })}
             </ul>
             {selectedSession && <ActionForm key={selectedSession} title="Revoke selected session" description="Confirm with your password. This device will lose access immediately." submitLabel="Confirm revoke session" onSubmit={async form => {
                 if (!snapshot.sessions.some(session => session.id === selectedSession && !session.current)) throw new Error("Select another session.");
