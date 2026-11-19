@@ -354,7 +354,7 @@ The stack uses only established primitives and libraries. It contains no custom 
 - **Per-instance defaults:** the global flood guard, the default rate-limit store and cron jobs (see above).
 - **Public setup state.** `GET /api/auth/me` reveals whether an instance still needs setup. Complete setup right after deploying.
 - **Pending MFA logins** are not deleted by "sign out other sessions" (they have no user yet). They can't complete after a password change or after MFA is disabled, and they expire after 10 minutes.
-- **No audit log** of security events beyond application logs, and no session-list API or UI. The generated settings UI can revoke a known session ID.
+- **No audit log** of security events beyond application logs. The session-only account API and generated settings UI show active sessions and allow password-confirmed revocation; session data and login cookie values are never returned.
 
 **Platform:**
 - **CSP** allows inline styles (`'unsafe-inline'` in `style-src`).

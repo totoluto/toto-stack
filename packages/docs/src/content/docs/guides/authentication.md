@@ -29,7 +29,7 @@ The shared `UserAuthState` values are `authenticated`, `login`, `otp`, `setup`, 
 
 ## Manage account security
 
-The generated **Settings** page supports password changes, MFA enrollment and disabling, API-key issuance/revocation, and revocation of a known session ID. It does not invent an MFA-status value or session list: the API exposes neither.
+The generated **Settings** page shows MFA and API-key status and active sessions from the session-only `GET /api/account` endpoint. It supports password changes, MFA enrollment and disabling, API-key issuance/revocation, and password-confirmed revocation of another session. Use logout to end the current session. Session handles are opaque revocation identifiers, not login cookies.
 
 - New passwords are 10–256 characters and stored with Argon2id. Sensitive account changes require the current password.
 - Password changes revoke the user's API key and other authenticated sessions. Old pending MFA logins cannot complete with a changed password.

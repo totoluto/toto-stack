@@ -110,14 +110,14 @@ Open **Settings** in the signed-in sidebar (`/admin/settings`). The responsive
 settings navigation supports direct links via `?section=account`, `security`,
 `users`, `notifications` and `service`.
 
-- **Account:** change your password, generate/copy/revoke your API key, and
-  revoke a known session ID. Keys are only held in component memory and can be
-  hidden immediately. Changing your password also revokes your key and signs
-  out your other sessions.
+- **Account:** change your password, see whether an API key is configured,
+  generate/copy/revoke it, and view active sessions with device, IP and activity
+  details. Revoke another session after confirming your password; use logout for
+  the current session. Keys are shown once and held only in component memory.
+  Changing your password also revokes your key and signs out your other sessions.
 - **Security:** enroll an authenticator using its QR code or manual key, verify
   enrollment, or disable two-factor authentication with your password and a
-  current code. The API does not expose your current MFA status or a session
-  list; the UI explains these limits rather than inventing those values.
+  current code. The page shows your current MFA status and the matching action.
 - **Users** (admins and owners): list accounts, create users with configured
   role names, and delete eligible accounts after confirmation. Only owners
   can grant `owner` or `admin`; owner accounts and your own account cannot be

@@ -7,6 +7,41 @@ sidebar:
 
 *Framework. Signed in.* [Shared request rules](/toto-stack/http/overview/) apply. The endpoints act on the caller's own account.
 
+### `GET /api/account`
+
+*Session only.* No body. Returns **200** with the standard success envelope and `Cache-Control: no-store`:
+
+```ts
+{
+  status: "success",
+  message: "Account settings",
+  data: {
+    account: {
+      id: number,
+      username: string,
+      roles: string[],
+      otpEnabled: boolean,
+      apiKeyEnabled: boolean
+    },
+    sessions: [{
+      id: string,
+      current: boolean,
+      ipAddress: string | null,
+      userAgent: string | null,
+      createdAt: Date,
+      lastSeenAt: Date,
+      expiresAt: Date
+    }]
+  }
+}
+```
+
+Dates are serialized as ISO 8601 strings in JSON. Only sessions belonging to the caller with `expiresAt > now` are listed, newest `lastSeenAt` first. `current` identifies the session making the request. The credential flags reflect the stored account state.
+
+Session `id` is an opaque handle: SHA-256 of the raw session ID, encoded as base64url. Pass it as `sessionID` to the revocation endpoint below. Neither raw session IDs nor session payloads, passwords, API-key hashes or OTP secrets are returned.
+
+Anonymous requests receive **401 `UNAUTHORIZED`**. Bearer authentication is not supported: a valid Bearer request receives **400 `BEARER_NOT_ALLOWED`**, including requests that also carry a session cookie.
+
 ## Password confirmation
 
 Endpoints that take `password` or `currentPassword` check the caller's existing password (a string of 1–256 characters):
@@ -65,7 +100,7 @@ Rate limits: password confirmation, then the same shared MFA limits as enrollmen
 
 ### `POST /api/account/revoke-session`
 
-Body: `{password, sessionID}`, the current password plus a nonempty session ID string identifying a session belonging to the caller. No TOTP code is required.
+Body: `{password, sessionID}`, the current password plus the opaque `sessions[].id` from `GET /api/account`. Opaque handles resolve only against the caller's active sessions. Legacy raw session IDs remain accepted for backwards compatibility (including expired sessions); deletion is always scoped to the caller. No TOTP code is required.
 
 | Response | When |
 |---|---|
