@@ -1,4 +1,7 @@
-// toto-stack public API (server side)
+/**
+ * Server-side public API, imported from `toto-stack`.
+ * @module server
+ */
 
 // Type augmentations: Express.Request#user and express-session SessionData
 import "./types/augmentations";

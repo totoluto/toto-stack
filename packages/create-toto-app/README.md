@@ -55,7 +55,7 @@ Then open http://localhost:3000/login and create the **owner** account:
 
 **Other package managers:**
 - **pnpm:** if it reports skipped build scripts, run `pnpm approve-builds` and approve `prisma`, `@prisma/engines` and `esbuild`.
-- **Overrides with pnpm and Yarn:** both ignore npm's `overrides`. Move the block to `pnpm.overrides` or `resolutions`. Bun reads `overrides` as is. See [Troubleshooting](https://github.com/totoluto/toto-stack/blob/master/docs/troubleshooting.md#overrides-with-pnpm-yarn-or-bun).
+- **Overrides with pnpm and Yarn:** both ignore npm's `overrides`. Move the block to `pnpm.overrides` or `resolutions`. Bun reads `overrides` as is. See [Troubleshooting](https://totoluto.github.io/toto-stack/maintain/troubleshooting/#overrides-with-pnpm-yarn-or-bun).
 - **The Dockerfile installs with npm.** Commit a `package-lock.json` (`npm install --package-lock-only`) for reproducible images.
 
 ## What gets generated

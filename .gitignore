@@ -38,4 +38,6 @@ yarn-error.log*
 **/server/public/*
 **/server/data/
 dist/
+packages/docs/.astro/
+packages/docs/src/content/docs/api/
 **/prisma/client
