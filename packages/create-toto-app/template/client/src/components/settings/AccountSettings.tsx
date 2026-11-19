@@ -1,6 +1,7 @@
 import {FormEvent, ReactNode, useState} from "react";
 import {apiFetch} from "toto-stack/client";
 import {useSubmit} from "@client/hooks/useSubmit";
+import {useAccount} from "@client/hooks/useAccount";
 import {CopyField} from "@client/components/CopyField";
 
 function ActionForm({title, description, submitLabel, onSubmit, children}: {
@@ -33,15 +34,22 @@ function ActionForm({title, description, submitLabel, onSubmit, children}: {
 }
 
 export function AccountSettings() {
+    const {snapshot, loading, error, refresh} = useAccount();
     const [apiKey, setApiKey] = useState("");
     const [confirmRevoke, setConfirmRevoke] = useState(false);
     const [revoked, setRevoked] = useState(false);
     const revoke = useSubmit();
+    const [selectedSession, setSelectedSession] = useState<string | null>(null);
+    const [sessionRevoked, setSessionRevoked] = useState(false);
+    if (!snapshot) return <div className="plate-panel settings-card">{error ? <><p className="settings-feedback" role="alert">{error}</p><button className="settings-button" disabled={loading} type="button" onClick={() => void refresh()}>Retry</button></> : <p role="status">Loading account…</p>}</div>;
     return <div className="settings-stack"><ActionForm title="Password" description="Use a unique password of 10–256 characters. Updating it signs out other sessions and revokes your API key." submitLabel="Update password" onSubmit={async form => {
         const data = new FormData(form);
         if (data.get("newPassword") !== data.get("confirmPassword")) throw new Error("The new passwords do not match.");
         await apiFetch("/api/account/password", {method: "POST", body: JSON.stringify({currentPassword: data.get("currentPassword"), newPassword: data.get("newPassword")})});
         setApiKey("");
+        setConfirmRevoke(false);
+        setSelectedSession(null);
+        await refresh();
         return "Password updated. Other sessions are signed out and your API key is revoked.";
     }}>
         <label>Current password<input name="currentPassword" type="password" autoComplete="current-password" required maxLength={256}/></label>
@@ -53,11 +61,13 @@ export function AccountSettings() {
                 const {apiKey: nextKey} = await apiFetch<{apiKey: string}>("/api/account/api-key", {method: "POST", body: JSON.stringify({password: new FormData(form).get("password")})});
                 setApiKey(nextKey);
                 setRevoked(false);
+                await refresh();
                 return "";
             }}>
                 <label>Password for API key<input name="password" type="password" autoComplete="current-password" required maxLength={256}/></label>
             </ActionForm>
             <div className="settings-key-controls">
+                <p>{snapshot.account.apiKeyEnabled ? "API key configured." : "No API key configured."}</p>
                 {apiKey && <div className="settings-secret"><p className="settings-feedback success" role="status">API key generated. Save it before leaving this page.</p><CopyField label="New API key" value={apiKey}/><button className="settings-button secondary" type="button" onClick={() => setApiKey("")}>Hide API key</button></div>}
                 {confirmRevoke ? <div className="settings-confirm">
                     <p>Revoke your API key? Applications using it will lose access immediately.</p>
@@ -67,21 +77,38 @@ export function AccountSettings() {
                             setApiKey("");
                             setRevoked(true);
                             setConfirmRevoke(false);
+                            await refresh();
                         })}>{revoke.loading ? "Revoking…" : "Confirm revoke key"}</button>
                         <button className="settings-button secondary" type="button" disabled={revoke.loading} onClick={() => setConfirmRevoke(false)}>Cancel</button>
                     </div>
-                </div> : <button className="settings-button secondary" type="button" onClick={() => {setConfirmRevoke(true); setRevoked(false);}}>Revoke API key</button>}
+                </div> : snapshot.account.apiKeyEnabled && <button className="settings-button secondary" type="button" onClick={() => {setConfirmRevoke(true); setRevoked(false);}}>Revoke API key</button>}
                 {revoke.error && <p className="settings-feedback" role="alert">{revoke.error}</p>}
                 {revoked && <p className="settings-feedback success" role="status">API key revoked.</p>}
             </div>
         </div>
-        <ActionForm title="Sessions" description="Revoke a session when you know its ID. The core API does not expose a session list. To end all other sessions, update your password. Revoking this session signs you out on your next request." submitLabel="Revoke session" onSubmit={async form => {
-            const data = new FormData(form);
-            await apiFetch("/api/account/revoke-session", {method: "POST", body: JSON.stringify({password: data.get("password"), sessionID: data.get("sessionID")})});
-            return "Session revocation requested. The session ID must belong to your account.";
-        }}>
-            <label>Session ID<input name="sessionID" type="text" autoComplete="off" required/></label>
-            <label>Password for session<input name="password" type="password" autoComplete="current-password" required maxLength={256}/></label>
-        </ActionForm>
+        <article className="plate-panel settings-card">
+            <div className="settings-card-heading"><h2>Sessions</h2><p>Review your signed-in devices. Revoke any other session you no longer recognize.</p></div>
+            <ul className="settings-stack settings-session-list">
+                {snapshot.sessions.map(session => <li className="settings-card" key={session.id}>
+                    <p>{session.userAgent ?? "Unknown device"}</p><p>{session.ipAddress ?? "Unknown IP address"}</p>
+                    <p>Created: <time dateTime={session.createdAt}>{new Date(session.createdAt).toLocaleString()}</time></p>
+                    <p>Last active: <time dateTime={session.lastSeenAt}>{new Date(session.lastSeenAt).toLocaleString()}</time></p>
+                    <p>Expires: <time dateTime={session.expiresAt}>{new Date(session.expiresAt).toLocaleString()}</time></p>
+                    {session.current ? <><strong>Current session</strong><p className="settings-hint">Use Log out to end this session.</p></> : <button className="settings-button secondary" type="button" onClick={() => {setSelectedSession(session.id); setSessionRevoked(false);}}>Revoke session</button>}
+                </li>)}
+            </ul>
+            {selectedSession && <ActionForm key={selectedSession} title="Revoke selected session" description="Confirm with your password. This device will lose access immediately." submitLabel="Confirm revoke session" onSubmit={async form => {
+                if (!snapshot.sessions.some(session => session.id === selectedSession && !session.current)) throw new Error("Select another session.");
+                await apiFetch("/api/account/revoke-session", {method: "POST", body: JSON.stringify({password: new FormData(form).get("password"), sessionID: selectedSession})});
+                setSelectedSession(null);
+                setSessionRevoked(true);
+                await refresh();
+                return "";
+            }}>
+                <label>Password for session<input name="password" type="password" autoComplete="current-password" required maxLength={256}/></label>
+                <button className="settings-button secondary" type="button" onClick={() => setSelectedSession(null)}>Cancel</button>
+            </ActionForm>}
+            {sessionRevoked && <p className="settings-feedback success" role="status">Session revoked.</p>}
+        </article>
     </div>;
 }
