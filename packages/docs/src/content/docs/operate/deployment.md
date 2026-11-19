@@ -49,13 +49,13 @@ The production files are split from the base file because Compose interpolates e
 | `db` | `mariadb:11.8.9-noble` (LTS) | Database. Data lives in the `db_data` volume. Healthcheck: `healthcheck.sh --connect --innodb_initialized`. `MARIADB_AUTO_UPGRADE=1` upgrades system tables when the image changes. No port is published in production. |
 | `migrate` | `migrate` build target | Runs `prisma migrate deploy` once, after `db` is healthy, then exits. |
 | `app` | `runtime` build target | Runs `node dist/server.js` as the unprivileged `node` user, with `init: true` (tini as PID 1, so `SIGTERM` reaches Node). Starts only after `db` is healthy **and** `migrate` completed successfully. Listens on port 3000 inside the network; not published. |
-| `proxy` | `traefik:v3.7.14` | Publishes ports 80 and 443, redirects HTTP to HTTPS, obtains certificates from Let's Encrypt (HTTP challenge) and compresses responses. Access log in `./logs/access.log`. |
+| `proxy` | `traefik:v3.7.18` | Publishes ports 80 and 443, redirects HTTP to HTTPS, obtains certificates from Let's Encrypt (HTTP challenge) and compresses responses. Access log in `./logs/access.log`. |
 
 ### Images
 
 | Stage | Contents |
 |---|---|
-| `base` | `FROM node:26.13.0-alpine3.24`. A literal tag (no build argument) so Dependabot can propose updates; change it here to use another Node version. |
+| `base` | `FROM node:26.13.1-alpine3.24`. A literal tag (no build argument) so Dependabot can propose updates; change it here to use another Node version. |
 | `deps` | Full dependency tree. The `postinstall` hook (`scripts/generate.js`) generates the Prisma client. `npm ci` if `package-lock.json` exists, otherwise `npm install` with a warning. |
 | `build` | `npm run build`: Prisma client, then the Vite client, then the esbuild server bundle in `dist/server.js` (ESM, with the Prisma client bundled) and `dist/public`. |
 | `prod-deps` | `npm ci --omit=dev --ignore-scripts`: only `toto-stack`, the MariaDB adapter and their dependencies. |
