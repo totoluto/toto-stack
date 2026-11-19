@@ -1,18 +1,24 @@
 # toto-stack
 
+## 0.2.1
+
+### Patch Changes
+
+- Complete account settings with MFA and API-key status, active-session details, and password-confirmed session revocation. Add a session-only account summary that returns opaque revocation handles without exposing credentials or session data. [#41](https://github.com/totoluto/toto-stack/pull/41) by [@totoluto](https://github.com/totoluto)
+
 ## 0.2.0
 
 ### Minor Changes
 
 - Promote user management to a built-in API: `GET`/`POST /api/users` and `DELETE /api/users/:id` are now mounted by the framework without app routes. Preserve admin/owner authorization, protected accounts, strict creation validation and secret-free responses. Reject malformed or out-of-range deletion IDs before database access, and load only identity and roles for deletion authorization. [#24](https://github.com/totoluto/toto-stack/pull/24) by [@totoluto](https://github.com/totoluto)
-  
-  Existing apps should remove their copied `UsersRoute.ts` and its registration from `server/routes/index.ts`; framework endpoints take precedence over app routes at the same paths. Review any local customizations and move app-specific extensions to distinct paths. No Prisma migration is required.
+
+    Existing apps should remove their copied `UsersRoute.ts` and its registration from `server/routes/index.ts`; framework endpoints take precedence over app routes at the same paths. Review any local customizations and move app-specific extensions to distinct paths. No Prisma migration is required.
 
 - Breaking: raise the minimum Node.js version from 22.12 to 22.22.0. Upgrade Node before installing this release or scaffolding an app. [#28](https://github.com/totoluto/toto-stack/pull/28) by [@totoluto](https://github.com/totoluto)
-  
-  Refresh runtime, client and build dependencies, including Express, Chalk 6, React Router 8, Vite 8 and the Node 26 container image. Update lint tooling together for ESLint 10 compatibility and retain TypeScript 5 while typescript-eslint does not support TypeScript 7.
-  
-  Serve SPA deep links correctly when the public directory has a hidden deployment parent, without relaxing public-root dotfile protection.
+
+    Refresh runtime, client and build dependencies, including Express, Chalk 6, React Router 8, Vite 8 and the Node 26 container image. Update lint tooling together for ESLint 10 compatibility and retain TypeScript 5 while typescript-eslint does not support TypeScript 7.
+
+    Serve SPA deep links correctly when the public directory has a hidden deployment parent, without relaxing public-root dotfile protection.
 
 ## 0.1.1
 
@@ -25,19 +31,19 @@
 Initial release: a security-focused foundation for Express 5 + Prisma 7 apps. ESM only; Node.js ≥ 22.12, so CommonJS apps load it through `require(esm)`.
 
 - **Server (`createServer`):**
-  - Configuration is validated once, from options and environment variables, and every problem is reported together in a `ConfigError`. Development mode is opt-in (`NODE_ENV=development|test`).
-  - Lifecycle with `beforeShutdown`/`onShutdown` hooks, request draining and optional signal handling.
+    - Configuration is validated once, from options and environment variables, and every problem is reported together in a `ConfigError`. Development mode is opt-in (`NODE_ENV=development|test`).
+    - Lifecycle with `beforeShutdown`/`onShutdown` hooks, request draining and optional signal handling.
 - **Authentication:**
-  - Password login with TOTP MFA via otplib (RFC 6238, ±1 step, persistent replay protection, optional AES-256-GCM encryption of secrets).
-  - First-run owner setup protected by a setup token, with atomic owner creation.
-  - Argon2id password hashing (`@node-rs/argon2`, OWASP baseline, configurable; rehashed on login when the parameters change) with bounded load shedding (`security.passwordHashing`, 503 `OVERLOADED`).
-  - Only established cryptographic libraries and `node:crypto` primitives; no custom algorithms.
+    - Password login with TOTP MFA via otplib (RFC 6238, ±1 step, persistent replay protection, optional AES-256-GCM encryption of secrets).
+    - First-run owner setup protected by a setup token, with atomic owner creation.
+    - Argon2id password hashing (`@node-rs/argon2`, OWASP baseline, configurable; rehashed on login when the parameters change) with bounded load shedding (`security.passwordHashing`, 503 `OVERLOADED`).
+    - Only established cryptographic libraries and `node:crypto` primitives; no custom algorithms.
 - **Sessions:** Prisma-backed, with absolute and idle timeouts and a `__Host-` cookie in production. No resurrection of revoked sessions; one database read per authenticated request.
 - **Protection:** CSRF (session-bound and signed anonymous tokens), origin allowlist, helmet/CSP, and rate limits with a pluggable `RateLimitStore`. Login device cookies keep users from being locked out of browsers they signed in from before.
 - **Authorization:** configurable string roles with `owner`/`admin` semantics and add-only role sync. Users issue and revoke their own `toto_` API keys (Bearer).
 - **Built-in endpoints** only for what the sign-in flow and account security need: auth (setup, login, MFA, logout, current user, CSRF), the signed-in user's account (password, MFA, API key) and health. One error envelope, in which every error carries a stable `ErrorCode`. Everything else, including user management, notifications and status, is app routes; `createUserSchema` and `sendNotificationSchema` are exported for them.
 - **Extensibility:** `BaseRoute` with per-endpoint auth, roles and zod 4 body validation; custom services (`CustomServices`); cron jobs (validated, no overlap); background services; notification handlers (webhook, Discord, Slack, Telegram, email); config-driven SMTP email; structured logging.
 - **Client and shared entries:**
-  - `toto-stack/client`: `apiFetch` with automatic CSRF handling and typed `ApiError`, `configureApiClient`, `UserProvider`/`useUser`, `NavLinkRole` (React 18/19, react-router 7/8).
-  - `toto-stack/shared`: client-safe roles, types and error codes.
+    - `toto-stack/client`: `apiFetch` with automatic CSRF handling and typed `ApiError`, `configureApiClient`, `UserProvider`/`useUser`, `NavLinkRole` (React 18/19, react-router 7/8).
+    - `toto-stack/shared`: client-safe roles, types and error codes.
 - **Prisma models** ship in `toto-stack/prisma/base.prisma` (MySQL/MariaDB).

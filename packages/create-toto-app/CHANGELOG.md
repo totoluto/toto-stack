@@ -1,5 +1,11 @@
 # create-toto-app
 
+## 0.2.1
+
+### Patch Changes
+
+- Complete account settings with MFA and API-key status, active-session details, and password-confirmed session revocation. Add a session-only account summary that returns opaque revocation handles without exposing credentials or session data. [#41](https://github.com/totoluto/toto-stack/pull/41) by [@totoluto](https://github.com/totoluto)
+
 ## 0.2.0
 
 ### Minor Changes
@@ -7,14 +13,14 @@
 - Replace placeholder settings with functional account security, API key, session revocation, role-aware user management, notification delivery and service health controls. Refine the template's landing, authentication, dashboard and navigation styling while preserving its dark neutral and indigo palette, with responsive layouts and accessible interaction feedback. No new dependencies or database migrations are required; previously generated apps can adopt the client changes manually. [#24](https://github.com/totoluto/toto-stack/pull/24) by [@totoluto](https://github.com/totoluto)
 
 - Promote user management to a built-in API: `GET`/`POST /api/users` and `DELETE /api/users/:id` are now mounted by the framework without app routes. Preserve admin/owner authorization, protected accounts, strict creation validation and secret-free responses. Reject malformed or out-of-range deletion IDs before database access, and load only identity and roles for deletion authorization. [#24](https://github.com/totoluto/toto-stack/pull/24) by [@totoluto](https://github.com/totoluto)
-  
-  Existing apps should remove their copied `UsersRoute.ts` and its registration from `server/routes/index.ts`; framework endpoints take precedence over app routes at the same paths. Review any local customizations and move app-specific extensions to distinct paths. No Prisma migration is required.
+
+    Existing apps should remove their copied `UsersRoute.ts` and its registration from `server/routes/index.ts`; framework endpoints take precedence over app routes at the same paths. Review any local customizations and move app-specific extensions to distinct paths. No Prisma migration is required.
 
 - Breaking: raise the minimum Node.js version from 22.12 to 22.22.0. Upgrade Node before installing this release or scaffolding an app. [#28](https://github.com/totoluto/toto-stack/pull/28) by [@totoluto](https://github.com/totoluto)
-  
-  Refresh runtime, client and build dependencies, including Express, Chalk 6, React Router 8, Vite 8 and the Node 26 container image. Update lint tooling together for ESLint 10 compatibility and retain TypeScript 5 while typescript-eslint does not support TypeScript 7.
-  
-  Serve SPA deep links correctly when the public directory has a hidden deployment parent, without relaxing public-root dotfile protection.
+
+    Refresh runtime, client and build dependencies, including Express, Chalk 6, React Router 8, Vite 8 and the Node 26 container image. Update lint tooling together for ESLint 10 compatibility and retain TypeScript 5 while typescript-eslint does not support TypeScript 7.
+
+    Serve SPA deep links correctly when the public directory has a hidden deployment parent, without relaxing public-root dotfile protection.
 
 ### Patch Changes
 
@@ -29,18 +35,18 @@ No changes in this release.
 Initial release: scaffolds a ready-to-run toto-stack app (`npm create toto-app@latest <directory>`).
 
 - **CLI:**
-  - Zero dependencies, with `--help`, `--version` and `--git`, and `.` for the current directory.
-  - Validates the app name, cleans up after a failed run, and prints next steps for npm, pnpm, Yarn or Bun.
+    - Zero dependencies, with `--help`, `--version` and `--git`, and `.` for the current directory.
+    - Validates the app name, cleans up after a failed run, and prints next steps for npm, pnpm, Yarn or Bun.
 - **Generated app:**
-  - A `.env` with random `SESSION_SECRET`, `SETUP_TOKEN`, `OTP_ENCRYPTION_KEY` and database passwords.
-  - Depends on `toto-stack` at the same version as the CLI.
+    - A `.env` with random `SESSION_SECRET`, `SETUP_TOKEN`, `OTP_ENCRYPTION_KEY` and database passwords.
+    - Depends on `toto-stack` at the same version as the CLI.
 - **Template:**
-  - React 19 + Vite client with accessible login, MFA and setup screens (setup token field). The one-time-code input supports typing, Backspace, arrow keys, paste and one-time-code autofill, and submits once.
-  - App-owned API routes in `server/routes`: user management (`/api/users`), notifications (`/api/notifications`) and status (`/api/status`), registered with `createServer({routes})`.
-  - ESM server bundle (esbuild).
-  - Prisma 7 schema and initial migration (`0_init`) for MariaDB.
-  - npm `overrides` for vulnerable transitive driver versions.
+    - React 19 + Vite client with accessible login, MFA and setup screens (setup token field). The one-time-code input supports typing, Backspace, arrow keys, paste and one-time-code autofill, and submits once.
+    - App-owned API routes in `server/routes`: user management (`/api/users`), notifications (`/api/notifications`) and status (`/api/status`), registered with `createServer({routes})`.
+    - ESM server bundle (esbuild).
+    - Prisma 7 schema and initial migration (`0_init`) for MariaDB.
+    - npm `overrides` for vulnerable transitive driver versions.
 - **Docker:**
-  - Multi-stage Dockerfile with a lean, non-root runtime image, a healthcheck and a separate `migrate` target.
-  - Compose files for development (MariaDB) and production (one-shot migrations, the app with a 30 s stop grace period, and Traefik with HTTPS and compression). Requires Docker Engine 20.10+ and Compose v2.1+.
-  - `postinstall` generates the Prisma client and skips cleanly in production installs.
+    - Multi-stage Dockerfile with a lean, non-root runtime image, a healthcheck and a separate `migrate` target.
+    - Compose files for development (MariaDB) and production (one-shot migrations, the app with a 30 s stop grace period, and Traefik with HTTPS and compression). Requires Docker Engine 20.10+ and Compose v2.1+.
+    - `postinstall` generates the Prisma client and skips cleanly in production installs.
