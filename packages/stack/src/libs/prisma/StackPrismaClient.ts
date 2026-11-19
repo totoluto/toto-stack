@@ -68,6 +68,16 @@ export type StackSessionUser = {
     roles: {role: {name: string}}[];
 };
 
+/** Only the credential flags needed by the account screen. API key hash stays internal. */
+export const ACCOUNT_SELECT = {...SESSION_USER_SELECT, otpEnabled: true, apiKey: true} as const;
+export type StackAccountRow = StackSessionUser & Pick<StackUserRow, "otpEnabled" | "apiKey">;
+
+/** Session metadata only; never read the session payload for account listings. */
+export const ACCOUNT_SESSION_SELECT = {
+    id: true, ipAddress: true, userAgent: true, createdAt: true, lastSeenAt: true, expiresAt: true,
+} as const;
+export type StackAccountSessionRow = Pick<StackSessionRow, keyof typeof ACCOUNT_SESSION_SELECT>;
+
 /** A JSON object as stored in the Session.data column. */
 export type StackJsonObject = {[key: string]: StackJsonValue};
 export type StackJsonValue = string | number | boolean | null | StackJsonObject | StackJsonValue[];
@@ -129,6 +139,8 @@ export interface StackPrismaClient {
         findFirst(args: {where?: {id?: number; username?: string}; include: IncludeRoles}): Promise<StackUserWithRoles | null>;
         /** Unique-index lookups of the credential-free columns (authentication). */
         findUnique(args: {where: UserUniqueWhere; select: SessionUserSelect}): Promise<StackSessionUser | null>;
+        /** Account identity and credential flags; the stored API-key hash stays internal. */
+        findUniqueOrThrow(args: {where: {id: number}; select: typeof ACCOUNT_SELECT}): Promise<StackAccountRow>;
         findMany(args: {
             select: {id: true; username: true; otpEnabled: true; createdAt: true; roles: IncludeRoles["roles"]};
         }): Promise<(Pick<StackUserRow, "id" | "username" | "otpEnabled" | "createdAt"> & {roles: StackUserRoleRow[]})[]>;
@@ -153,7 +165,13 @@ export interface StackPrismaClient {
     };
     session: {
         findUnique(args: {where: {id: string}; select: SessionLoadSelect}): Promise<StackSessionLoadRow | null>;
-        findMany(args: {where: {expiresAt: {lt: Date}}; select: {id: true}; take: number}): Promise<{id: string}[]>;
+        // One structural shape keeps generated Prisma's generic delegate assignable.
+        findMany(args: {
+            where: {userId?: number; expiresAt: {lt?: Date; gt?: Date}};
+            select: {id: true} | typeof ACCOUNT_SESSION_SELECT;
+            take?: number;
+            orderBy?: {lastSeenAt: "desc"};
+        }): Promise<{id: string}[] | StackAccountSessionRow[]>;
         create(args: {data: SessionWrite & {id: string; createdAt: Date}}): Promise<unknown>;
         updateMany(args: {where: {id: string}; data: Partial<SessionWrite>}): Promise<{count: number}>;
         deleteMany(args: {where: SessionWhere}): Promise<{count: number}>;

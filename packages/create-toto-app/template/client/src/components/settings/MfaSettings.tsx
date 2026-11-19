@@ -2,10 +2,12 @@ import {FormEvent, useState} from "react";
 import {apiFetch} from "toto-stack/client";
 import {CopyField} from "@client/components/CopyField";
 import {useSubmit} from "@client/hooks/useSubmit";
+import {useAccount} from "@client/hooks/useAccount";
 
 type Enrollment = {qrCode: string; key: string};
 
 export function MfaSettings() {
+    const {snapshot, loading: accountLoading, error: accountError, refresh} = useAccount();
     const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
     const [disabling, setDisabling] = useState(false);
     const [message, setMessage] = useState("");
@@ -24,6 +26,7 @@ export function MfaSettings() {
                 setEnrollment(null);
                 setDisabling(false);
                 setMessage(success);
+                await refresh();
             }
             form.reset();
         });
@@ -35,11 +38,12 @@ export function MfaSettings() {
         setError(null);
     }
 
+    if (!snapshot) return <div className="plate-panel settings-card">{accountError ? <><p className="settings-feedback" role="alert">{accountError}</p><button className="settings-button" disabled={accountLoading} type="button" onClick={() => void refresh()}>Retry</button></> : <p role="status">Loading account…</p>}</div>;
     return <article className="plate-panel settings-card">
         <div className="settings-card-heading"><h2>Two-factor authentication</h2>
             <p>Add a second layer of protection with an authenticator app. Changes sign out your other sessions.</p>
         </div>
-        <p className="settings-hint">Your current two-factor status is not exposed by the account API. Set up an authenticator if it is off, or use your existing code to turn it off.</p>
+        <p className="settings-hint">Two-factor authentication is {snapshot.account.otpEnabled ? "enabled" : "disabled"}.</p>
         {enrollment ? <form className="settings-form" onSubmit={event => submit(event, "verify", "Two-factor authentication enabled. Other sessions have been signed out.")}>
             <p>Scan this code in your authenticator app, then enter its six-digit code. Setup expires after 10 minutes.</p>
             <img className="settings-qr" src={enrollment.qrCode} alt="Scan with your authenticator app"/>
@@ -59,11 +63,10 @@ export function MfaSettings() {
                 <button className="settings-button settings-danger" disabled={loading} type="submit">{loading ? "Updating…" : "Confirm turn off"}</button>
                 <button className="settings-button secondary" disabled={loading} type="button" onClick={cancel}>Cancel</button>
             </div>
-        </form> : <form className="settings-form" onSubmit={event => submit(event, "start", "")}>
+        </form> : snapshot.account.otpEnabled ? <button className="settings-button secondary" disabled={loading} type="button" onClick={() => {setDisabling(true); setMessage(""); setError(null);}}>Turn off two-factor authentication</button> : <form className="settings-form" onSubmit={event => submit(event, "start", "")}>
             <label>Password for two-factor authentication<input name="password" type="password" autoComplete="current-password" required maxLength={256} disabled={loading}/></label>
             <div className="settings-actions">
                 <button className="settings-button" disabled={loading} type="submit">{loading ? "Starting…" : "Set up authenticator"}</button>
-                <button className="settings-button secondary" disabled={loading} type="button" onClick={() => {setDisabling(true); setMessage(""); setError(null);}}>Turn off two-factor authentication</button>
             </div>
         </form>}
         {error && <p className="settings-feedback" role="alert">{error}</p>}
