@@ -15,6 +15,7 @@ export default defineConfig([
         '**/dist',
         '**/coverage',
         '**/prisma/client',
+        'packages/docs/.astro',
         // The template's built client bundle (Vite outDir).
         'packages/create-toto-app/template/server/public',
     ]),

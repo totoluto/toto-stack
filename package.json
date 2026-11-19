@@ -23,6 +23,9 @@
     "test:scaffold": "node scripts/scaffold-e2e.mjs",
     "check": "npm run build:stack && npm run lint && npm run typecheck && npm test && npm run build:app",
     "check:release": "node scripts/check-release.mjs",
+    "docs:dev": "npm run dev -w toto-docs",
+    "docs:build": "npm run build -w toto-docs",
+    "docs:check": "npm run check -w toto-docs",
     "changeset": "changeset",
     "version-packages": "changeset version && npm install --package-lock-only --ignore-scripts --no-audit --no-fund && node scripts/check-release.mjs",
     "audit": "npm audit",
@@ -40,6 +43,9 @@
     "typescript-eslint": "^8.72.0"
   },
   "overrides": {
+    "@astrojs/starlight": {
+      "@astrojs/markdown-remark": "7.2.0"
+    },
     "mariadb": "^3.5.4",
     "mysql2": "^3.24.5",
     "deepmerge-ts": "^8.0.2"

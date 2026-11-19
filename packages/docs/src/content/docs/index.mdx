@@ -1,0 +1,50 @@
+---
+title: Build with toto-stack
+description: A practical guide to the framework, generated application and public APIs.
+template: splash
+hero:
+  title: Your app.
+    A secure foundation.
+  tagline: Express, Prisma and React — with authentication, permissions and deployment already connected. Learn the pieces, make them yours, and ship with confidence.
+  actions:
+    - text: Create your first app
+      link: /toto-stack/start/quick-start/
+      icon: right-arrow
+    - text: Explore the HTTP API
+      link: /toto-stack/http/overview/
+      variant: secondary
+---
+
+import {CardGrid, LinkCard} from '@astrojs/starlight/components';
+
+<div className="docs-eyebrow">THE TOTO-STACK HANDBOOK</div>
+
+This handbook follows `master` and may describe unreleased changes. See the [upgrade guide](/toto-stack/maintain/upgrading/) before updating an existing app.
+
+## A clear path from first run to production
+
+Start with the generated application, understand the framework underneath it, then extend only what your product needs.
+
+<CardGrid>
+  <LinkCard title="Start building" description="Create an app, connect MariaDB and sign in as the first owner." href="/toto-stack/start/quick-start/" />
+  <LinkCard title="Understand the architecture" description="See how the server, client, database and extension points fit together." href="/toto-stack/start/architecture/" />
+  <LinkCard title="Extend your application" description="Add validated routes, typed services and background jobs." href="/toto-stack/guides/routes/" />
+  <LinkCard title="Deploy with confidence" description="Build the application and operate it with Docker, migrations and HTTPS." href="/toto-stack/operate/deployment/" />
+</CardGrid>
+
+## Know what you own
+
+| Framework | Generated application |
+| --- | --- |
+| Authentication, MFA, sessions and permissions | Your pages, layout and application routes |
+| User and account APIs, CSRF and rate limits | Prisma schema, migrations and environment configuration |
+| React helpers, lifecycle and service contracts | Docker files and application-specific integrations |
+
+The framework updates through the `toto-stack` package. Files copied by `create-toto-app` belong to your application and remain under your control. [Understand the upgrade boundary](/toto-stack/maintain/upgrading/).
+
+## Find the contract you need
+
+<CardGrid>
+  <LinkCard title="HTTP API" description="Requests, responses, permissions, CSRF and error codes. Framework and template endpoints are clearly separated." href="/toto-stack/http/overview/" />
+  <LinkCard title="TypeScript API" description="Generated reference for the server, React client and shared public exports." href="/toto-stack/api/" />
+</CardGrid>
